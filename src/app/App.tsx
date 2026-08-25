@@ -1,3 +1,5 @@
+import { InspectDocumentPanel } from './InspectDocumentPanel';
+
 export function App() {
   return (
     <main className="console-shell">
@@ -19,6 +21,7 @@ export function App() {
           in MC-00.
         </p>
       </section>
+      <InspectDocumentPanel />
     </main>
   );
 }

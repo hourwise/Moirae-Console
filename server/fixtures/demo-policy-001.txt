@@ -1,0 +1,7 @@
+# Moirae Console demonstration policy
+
+MC01-PROTECTED-DOCUMENT-CANARY-9f4c2d7a
+
+This fixed, non-sensitive document exists only to demonstrate a governed read. It is
+available to the host-side document source by the canonical ID demo-policy-001. The
+document is disclosed only after the host verifies the applicable governance outcome.

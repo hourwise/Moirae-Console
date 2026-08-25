@@ -76,3 +76,15 @@ must not manufacture receipts, upgrade decisions, or use a fake provider in prod
 
 Raw local evidence is intentionally not duplicated here. The upstream closure is provenance,
 not a second evidence archive.
+
+## MC-01 transport status
+
+MC-01 did **not** exercise a live authoritative Fates transport. It uses the bounded synthetic
+provider for deterministic tests and an explicit authoritative-shaped test outcome to verify
+the disclosure predicate. That outcome is not a live Fates receipt.
+
+The default host-side handler constructs a production `FatesClient` without a transport. In
+that mode Fates is unavailable, the request becomes `FAILED`, and the fixed document is not
+read or disclosed. Synthetic evidence is labelled `SYNTHETIC_TEST_ONLY` and cannot satisfy the
+production disclosure predicate. An explicitly selected `synthetic-demo` service mode exists
+only for local tests and is not production authority.

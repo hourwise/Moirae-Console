@@ -28,17 +28,19 @@ direct WebMCP-to-side-effect path and no governed mutation implementation.
 
 ## Current state
 
-This repository is at the **MC-00 foundation stage**:
+This repository is at the **MC-01 first governed read-only disclosure stage**:
 
 - pre-production;
 - private development repository;
 - independently buildable and testable with a deterministic synthetic governance provider;
 - no production deployment;
 - no containment or security-complete claim;
+- one bounded, read-only `inspect_document` demonstration path;
 - no final WebMCP challenge workflow.
 
-MC-01 is expected to add the first bounded, read-only governed action (`inspect_document`).
-Mutation, approval, and destructive workflows are later slices and are not implemented here.
+The MC-01 demonstration uses a fixed host-side fixture and keeps production Fates transport
+unavailable/fail-closed until a separately approved integration is available. Mutation,
+approval, and destructive workflows are later slices and are not implemented here.
 
 ## Development
 
@@ -51,6 +53,7 @@ npm run lint
 npm run format
 npm test
 npm run build
+npm run check:bundle
 ```
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/FATES_BOUNDARY.md`](docs/FATES_BOUNDARY.md),

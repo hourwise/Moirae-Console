@@ -14,6 +14,9 @@ Agent / Browser / WebMCP
        └── WebMCP inbound adapter
           │
           ▼
+  Host-side Moirae boundary
+           │
+           ▼
   Console Fates client boundary
           │
           ▼
@@ -28,26 +31,32 @@ Agent / Browser / WebMCP
   authoritative governed outcome
           │
           ▼
-  governed execution (future bounded integration)
+  disclosure gate
+           │
+           ▼
+  fixed host-side document source
 ```
 
 The diagram intentionally does not prescribe an internal order between Fates. The canonical
 Fates integration documentation remains authoritative for those runtime relationships.
 
-## MC-00 boundary
+## MC-00 and MC-01 boundary
 
 The WebMCP adapter accepts an invocation, validates that the tool is registered, snapshots
 the request, and submits it to the Console-facing `FatesClient`. It returns the authoritative
-or fail-closed outcome to the caller. It has no database, filesystem, network-mutation, or
-effect callback.
+or fail-closed outcome to the host-side disclosure boundary. It has no database, arbitrary
+filesystem, network-mutation, or mutation callback.
 
-The React surface is presentation only. It renders the repository stage and does not call a
-privileged effect. MC-00 intentionally has no effect executor, production authentication,
-database, deployment integration, or final challenge workflow.
+The React surface is presentation only. It requests one fixed, read-only demonstration
+document through `/api/inspect-document`; it never imports or retrieves the fixture directly.
+The host-side service reads the fixed fixture only after `mayDisclose(...)` accepts the
+governance result. MC-01 adds no mutation, production authentication, database, deployment
+integration, or final challenge workflow.
 
-There is therefore no `WebMCP → governed side effect` shortcut in this slice. A future effect
-path must be a separate bounded integration that accepts exact Fates evidence and preserves
-request identity, context, replay, freshness, and approval bindings.
+There is no `WebMCP → document source` shortcut and no browser-bundled protected document.
+Disclosure is itself treated as an effect. A future mutable effect path must be a separate
+bounded integration that accepts exact Fates evidence and preserves request identity,
+context, replay, freshness, and approval bindings.
 
 ## Security invariants
 
@@ -58,7 +67,7 @@ MC-00 documents and structurally supports these invariants:
 2. **MC-INV-002 — Capability is not authority.** `discoverable(tool) != authorised(caller,
 tool, parameters)`.
 3. **MC-INV-003 — No side-effect bypass.** Governed requests cross the Fates client boundary;
-   MC-00 contains no alternate effect path.
+   MC-01's only effect is the fixed host-side read after the disclosure predicate.
 4. **MC-INV-004 — Fail closed.** Unavailable, malformed, ambiguous, unknown, or unverifiable
    results become an error/unknown state and cause no effect.
 5. **MC-INV-005 — UI cannot upgrade authority.** Presentation state cannot rewrite an outcome.
@@ -78,6 +87,6 @@ future transport secure against every threat.
 
 ## Future direction
 
-The first future implementation slice should add a read-only `inspect_document` action. It
-must keep the same adapter-to-Fates route and introduce no direct browser mutation. Later
-mutation and approval slices must bind decisions to exact operation identity and parameters.
+MC-01 implements one fixed read-only `inspect_document` action. Later mutation and approval
+slices must bind decisions to exact operation identity and parameters, and must not reuse this
+demonstration fixture boundary as a general document store.

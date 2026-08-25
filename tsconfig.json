@@ -19,5 +19,5 @@
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "tests", "vite.config.ts", "eslint.config.js"]
+  "include": ["src", "server", "tests", "vite.config.ts", "eslint.config.js"]
 }

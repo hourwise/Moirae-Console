@@ -95,6 +95,124 @@ h2 {
   line-height: 1.6;
 }
 
+.inspection-panel {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid #393a31;
+  border-radius: 0.75rem;
+  background: rgba(30, 32, 27, 0.64);
+}
+
+.inspection-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.inspection-header h2 {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+button {
+  border: 1px solid #766331;
+  border-radius: 999px;
+  padding: 0.65rem 0.85rem;
+  color: #121311;
+  background: #c6a85d;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.inspection-copy,
+.result-note {
+  color: #b8b7af;
+  line-height: 1.6;
+}
+
+.lifecycle {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.lifecycle-step {
+  min-width: 7rem;
+  padding: 0.75rem;
+  border: 1px solid #393a31;
+  border-radius: 0.5rem;
+}
+
+.lifecycle-step span,
+.lifecycle-step small {
+  display: block;
+}
+
+.lifecycle-step span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.lifecycle-step small {
+  margin-top: 0.35rem;
+  color: #8c8b83;
+  font-size: 0.65rem;
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.evidence-grid div {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid #393a31;
+  border-radius: 0.5rem;
+}
+
+.evidence-grid dt {
+  color: #8c8b83;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.evidence-grid dd {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.document-body {
+  overflow-x: auto;
+  margin: 1rem 0 0;
+  padding: 1rem;
+  border: 1px solid #766331;
+  border-radius: 0.5rem;
+  color: #e8e5dc;
+  background: #191a16;
+  font:
+    0.85rem/1.6 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 600px) {
   .console-shell {
     width: min(100% - 2rem, 62rem);
@@ -102,6 +220,14 @@ h2 {
   }
 
   .status-card {
+    grid-template-columns: 1fr;
+  }
+
+  .inspection-header {
+    flex-direction: column;
+  }
+
+  .evidence-grid {
     grid-template-columns: 1fr;
   }
 }

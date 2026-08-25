@@ -1,4 +1,9 @@
-import type { CallerIdentity, GovernanceOutcome, RequestContext } from '../fates/types';
+import type {
+  CallerIdentity,
+  GovernanceOutcome,
+  GovernedRequest,
+  RequestContext,
+} from '../fates/types';
 
 export interface WebMcpToolDescriptor {
   readonly name: string;
@@ -17,4 +22,10 @@ export interface WebMcpInvocation {
 export interface WebMcpAdapter {
   discover(): readonly WebMcpToolDescriptor[];
   invoke(invocation: WebMcpInvocation): Promise<GovernanceOutcome>;
+  invokeGoverned(invocation: WebMcpInvocation): Promise<WebMcpGovernedInvocation>;
+}
+
+export interface WebMcpGovernedInvocation {
+  readonly request: GovernedRequest;
+  readonly outcome: GovernanceOutcome;
 }

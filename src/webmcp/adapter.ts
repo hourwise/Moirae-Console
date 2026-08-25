@@ -1,7 +1,12 @@
-import { snapshotGovernedRequest, unknownOutcome } from '../fates/client';
+import { failedOutcome, snapshotGovernedRequest, unknownOutcome } from '../fates/client';
 import type { FatesClient } from '../fates/client';
 import type { GovernedRequest } from '../fates/types';
-import type { WebMcpAdapter, WebMcpInvocation, WebMcpToolDescriptor } from './types';
+import type {
+  WebMcpAdapter,
+  WebMcpGovernedInvocation,
+  WebMcpInvocation,
+  WebMcpToolDescriptor,
+} from './types';
 
 export interface WebMcpAdapterConfiguration {
   readonly client: FatesClient;
@@ -21,9 +26,24 @@ export function createWebMcpAdapter(configuration: WebMcpAdapterConfiguration): 
     },
 
     async invoke(invocation: WebMcpInvocation) {
+      const governed = await this.invokeGoverned(invocation);
+      return governed.outcome;
+    },
+
+    async invokeGoverned(invocation: WebMcpInvocation): Promise<WebMcpGovernedInvocation> {
       const descriptor = descriptors.find((tool) => tool.name === invocation.toolName);
       if (!descriptor) {
-        return unknownOutcome(invocation.requestId, 'WEBMCP_TOOL_NOT_REGISTERED');
+        const request = snapshotGovernedRequest({
+          requestId: invocation.requestId,
+          caller: invocation.caller,
+          action: invocation.toolName,
+          parameters: invocation.arguments,
+          context: invocation.context,
+        });
+        return {
+          request,
+          outcome: unknownOutcome(invocation.requestId, 'WEBMCP_TOOL_NOT_REGISTERED'),
+        };
       }
 
       const request: GovernedRequest = snapshotGovernedRequest({
@@ -34,7 +54,14 @@ export function createWebMcpAdapter(configuration: WebMcpAdapterConfiguration): 
         context: invocation.context,
       });
 
-      return configuration.client.govern(request);
+      let outcome;
+      try {
+        outcome = await configuration.client.govern(request);
+      } catch (error) {
+        outcome = failedOutcome(request.requestId, error);
+      }
+
+      return { request, outcome };
     },
   };
 }

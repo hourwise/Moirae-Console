@@ -203,8 +203,11 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
 export function isAuthoritativeAllow(outcome: GovernanceOutcome): outcome is AllowedOutcome {
   return (
     outcome.status === 'ALLOWED' &&
+    Boolean(outcome.outcomeId) &&
     outcome.evidence.source === 'fates' &&
     outcome.evidence.authority === 'authoritative' &&
-    Boolean(outcome.evidence.receiptId && outcome.evidence.decisionDigest)
+    Boolean(
+      outcome.evidence.evidenceId && outcome.evidence.receiptId && outcome.evidence.decisionDigest,
+    )
   );
 }

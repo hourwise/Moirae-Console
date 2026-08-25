@@ -42,4 +42,17 @@ model, and remaining containment/recovery gates.
 This model does not prove real Firecracker/KVM containment, guest escape resistance, host
 filesystem/socket/descriptor containment, durable crash or power-loss replay behaviour, or
 general safety against novel models and attacks. Those are upstream or future integration
-gates, not claims made by MC-00.
+gates, not claims made by MC-01.
+
+## MC-01 disclosure-specific threats
+
+| Threat                                | Asset              | Trust boundary                | Required invariant | MC-01 mitigation                                                                                    | Future work                                              |
+| ------------------------------------- | ------------------ | ----------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Protected fixture bundled in frontend | document content   | host build ↔ browser          | 003, 010           | fixture is outside browser imports; post-build canary scan checks delivered assets                  | production asset pipeline review                         |
+| Direct fixture retrieval              | document content   | browser ↔ host                | 003, 009           | only POST `/api/inspect-document` exists; no document path or URL route                             | authenticated production host                            |
+| Path traversal/arbitrary path         | host filesystem    | request ↔ fixed source        | 003, 004           | canonical ID allowlist maps to one fixed fixture; no user path resolution                           | broader document service only with a new security review |
+| ID substitution after governance      | disclosed document | request ↔ source              | 006, 008           | frozen request parameters and exact `demo-policy-001` predicate are reused for the read             | authoritative parameter binding in Fates                 |
+| Parameter mutation after governance   | request identity   | caller ↔ host                 | 006, 008           | request is cloned and frozen before Fates call                                                      | canonical signed request                                 |
+| Synthetic provider authorization      | disclosure         | test ↔ production             | 004, 010           | production predicate requires Fates-authoritative evidence; synthetic mode is explicit and labelled | live Fates transport                                     |
+| UI decision upgrade                   | decision/display   | host ↔ browser                | 005, 007           | UI renders returned lifecycle/evidence and never reads the source                                   | end-to-end browser security tests                        |
+| Response/cache leakage                | document content   | host response ↔ browser/cache | 003, 010           | content appears only on disclosed response; denied responses omit the document field                | cache-control and authenticated session policy           |

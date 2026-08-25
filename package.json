@@ -17,7 +17,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "audit": "npm audit --omit=optional",
-    "check": "npm run typecheck && npm run lint && npm run format && npm test && npm run build"
+    "check:bundle": "node scripts/check-browser-bundle.mjs",
+    "check": "npm run typecheck && npm run lint && npm run format && npm test && npm run build && npm run check:bundle"
   },
   "dependencies": {
     "react": "19.2.8",
