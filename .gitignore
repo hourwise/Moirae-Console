@@ -1,0 +1,21 @@
+
+# Dependencies and generated output
+node_modules/
+dist/
+coverage/
+.vite/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Temporary local evidence/logs
+*.log
+*.ndjson
