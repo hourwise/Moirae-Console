@@ -25,12 +25,16 @@
       "repository": "https://github.com/hourwise/Project-Adrasteia",
       "package": "project-runtime-contracts",
       "sha": "a1c01bf9e6f9d6a126cfdcc1acfacd488b214210",
+      "runtimeSourceRef": "release/webmcp-runtime-v0.6.2",
       "sourceBaseSha": "6aba3ef466a16292689d4afaf9f9bc40dc013301",
       "version": "0.6.2",
       "license": "MIT",
       "runtimeRole": "Ananke runtime contract dependency",
       "consumption": "exact HTTPS Git source pin in Ananke lockfile; npm prepare builds dist",
       "publiclyReproducibleNow": false,
+      "mainLineageSha": "f9eeb25076e0a590f13c7bed6c8de8c9a363ce1b",
+      "mainLineageVersion": "0.4.0",
+      "mainLineageRole": "separate older Project-Adrasteia lineage; not used by the hackathon runtime",
       "packageContentSha256": "0B19E8FBB1759AEEA01A54CC206732F1EC980557B20BFBEE91B0BD39AD5F5BFB",
       "packageArchiveSha256": "AAB38EA052AFA8C5230932510DEFB0610B96B1000EAF12A9BE55936D46B6EB40",
       "historicalArtifact": "HISTORICAL_PRIVATE_ARTIFACT_NOT_USED_BY_PUBLIC_RELEASE"
@@ -59,7 +63,7 @@
     }
   ],
   "buildOrder": [
-    "Checkout Project-Adrasteia at the exact source pin, run npm ci and npm run build.",
+    "Checkout Project-Adrasteia at release/webmcp-runtime-v0.6.2 (exact source pin a1c01bf9e6f9d6a126cfdcc1acfacd488b214210), run npm ci and npm run build.",
     "Install Ananke from its exact source pin; npm fetches Project-Adrasteia over HTTPS and runs its prepare build.",
     "Build and start Ananke runtime-core with authenticated server-side profiles.",
     "Build and start Moirae Console production host.",

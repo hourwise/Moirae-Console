@@ -24,6 +24,31 @@ The human-facing screen shows three outcomes:
 Approval and restricted-agent controls are Console presentation functions;
 they are not additional WebMCP tools.
 
+## Public runtime source
+
+The real authority path is built from these exact source checkpoints:
+
+```text
+Moirae Console
+   ↓
+Project Ananke @ 5fa868b0355c7e2f000ef80db5d27d5c6987e6f2
+   ↓
+Project-Adrasteia / Runtime Contracts 0.6.2
+   ↓
+release/webmcp-runtime-v0.6.2
+   ↓
+a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
+```
+
+Project-Adrasteia `main` is currently a separate older `0.4.0` lineage at
+`f9eeb25076e0a590f13c7bed6c8de8c9a363ce1b`; it is not the source used by the
+hackathon runtime. Ananke pins the reviewed Runtime Contracts source by exact
+commit, so this reference branch is a provenance pointer rather than an
+authority upgrade or a merge claim.
+
+Source links: [Project Ananke](https://github.com/hourwise/Project-Ananke) and
+[Project-Adrasteia Runtime Contracts 0.6.2](https://github.com/hourwise/Project-Adrasteia/tree/release/webmcp-runtime-v0.6.2).
+
 ## Architecture
 
 ```text
@@ -47,13 +72,19 @@ authority.
 Requirements: Node.js 22.12 or newer and npm.
 
 The Console depends on a separately running Ananke authority. The public
-Ananke repository contains the runtime source; use the accepted MC-06
-checkpoint for this demonstration:
+Ananke repository contains the runtime source; use the accepted MC-11
+source-dependency checkpoint for this demonstration:
 
 ```shell
+git clone --branch release/webmcp-runtime-v0.6.2 https://github.com/hourwise/Project-Adrasteia.git ../Project-Adrasteia
+cd ../Project-Adrasteia
+git checkout a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
+npm ci --no-audit --no-fund
+npm run build
+
 git clone https://github.com/hourwise/Project-Ananke.git ../Project-Ananke
 cd ../Project-Ananke
-git checkout 693b386218e73afaa579cb6457f054007293581b
+git checkout 5fa868b0355c7e2f000ef80db5d27d5c6987e6f2
 npm ci
 npm run build
 npm run build -w @ananke/runtime-core

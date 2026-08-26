@@ -1,4 +1,4 @@
-# MC-11 public runtime distribution
+# MC-12 public runtime distribution
 
 Status: **source-pinned; pending repository visibility and full public clean-room execution**.
 
@@ -14,7 +14,7 @@ Moirae Console
        └─ Project Ananke / @ananke/runtime-core
             ├─ @ananke/adrasteia-adapter
             │    └─ project-runtime-contracts 0.6.2
-            │         └─ Project-Adrasteia source
+            │         └─ Project-Adrasteia `release/webmcp-runtime-v0.6.2`
             ├─ @ananke/schema, authority-engine, policy-engine
             ├─ outcome-engine, audit-engine, tool-router
             └─ Hono, better-sqlite3, jose, zod (registry dependencies)
@@ -31,7 +31,7 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
 | Moirae Console                        | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus this document commit                                                    | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Local source is present; public visibility is not authorized  |
 | Project Ananke                        | `5fa868b0355c7e2f000ef80db5d27d5c6987e6f2` (runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Required; source repository is currently private |
-| Project-Adrasteia / Runtime Contracts | `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`) | Runtime contract package consumed by Ananke | Required; source repository is currently private |
+| Project-Adrasteia / Runtime Contracts | `release/webmcp-runtime-v0.6.2` → `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`) | Runtime contract package consumed by Ananke | Required; source repository is currently private |
 
 The Console commit is the accepted MC-09 remediation checkpoint. The
 distribution documents are additional review material on the bounded MC-09
@@ -60,6 +60,18 @@ Ananke consumes the contract package through this exact HTTPS Git source pin:
 git+https://github.com/hourwise/Project-Adrasteia.git#
 a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
 ```
+
+The exact source commit is also exposed through the stable
+`release/webmcp-runtime-v0.6.2` reference. This branch is a
+source-distribution reference to the reviewed `project-runtime-contracts`
+`0.6.2` implementation; it is not a new software version and does not imply
+a merge into Project-Adrasteia `main`.
+
+Project-Adrasteia `main` currently points to
+`f9eeb25076e0a590f13c7bed6c8de8c9a363ce1b`, a separate older `0.4.0` lineage.
+That mainline is intentionally not the Runtime Contracts source used by the
+Moirae hackathon runtime. Ananke remains pinned to the exact `a1c01bf...`
+commit above, not to `main` or to a floating branch.
 
 The Project-Adrasteia package has an npm `prepare` hook which builds `dist`
 from source during Git installation. The lockfile records the exact source
@@ -106,7 +118,7 @@ minimum public Ananke and Project-Adrasteia source repositories, each pinned
 to the reviewed source commits.
 
 ```text
-# Project-Adrasteia at a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
+# Project-Adrasteia release/webmcp-runtime-v0.6.2 at a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
 npm ci --no-audit --no-fund
 npm run build
 
@@ -132,6 +144,8 @@ to browser JavaScript.
 ## Current gate result
 
 The private artifact dependency has been removed from the active source path.
+The hackathon source is the exact `release/webmcp-runtime-v0.6.2` reference,
+not Project-Adrasteia `main`.
 The source dependency and two-build reproducibility controls pass. A complete
 public/no-credential runtime reproduction remains pending because Ananke and
 Project-Adrasteia are still private and MC-11 does not authorize changing
