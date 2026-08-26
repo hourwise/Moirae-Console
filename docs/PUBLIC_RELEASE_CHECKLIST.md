@@ -19,3 +19,18 @@ claim public-release readiness. Complete this checklist before a future visibili
 - [ ] A deployed URL is reviewed before it is published.
 - [ ] A demo/video is reviewed for accidental private data or overclaiming.
 - [ ] Repository visibility is changed only through an explicitly authorised action.
+
+## MC-07 WebMCP challenge gate
+
+- [ ] The official challenge requirements are rechecked: live URL, public source, open-source
+      license, complete runnable source/assets/instructions, project description, and a public
+      video under three minutes.
+- [ ] The current imperative WebMCP API is used: `document.modelContext.registerTool(...)`.
+- [ ] Discovery exposes exactly `inspect_document` and `publish_document`.
+- [ ] A normal Node production host serves static assets and only the bounded same-origin APIs.
+- [ ] A clean-room checkout builds, starts, and runs the documented tests without private files.
+- [ ] Public Fates dependency provenance and licenses are independently confirmed before release.
+- [ ] Real browser WebMCP discovery and invocation evidence is captured, or the blocker is
+      explicitly recorded.
+- [ ] Repeat visits have a documented bounded publication outcome and no public reset endpoint.
+- [ ] The live URL, repository, video, and submission are separately approved before publishing.

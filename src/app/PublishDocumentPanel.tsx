@@ -33,6 +33,26 @@ export function PublishDocumentPanel() {
       .catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    const handleWebMcpResult = (event: Event) => {
+      const detail = (event as CustomEvent<{ toolName?: string; result?: PublicationResult }>)
+        .detail;
+      if (detail?.toolName === 'publish_document' && detail.result) {
+        void requestPublicationStatus()
+          .catch(() => undefined)
+          .then((snapshot) =>
+            setState({
+              status: 'RESULT',
+              result: detail.result!,
+              ...(snapshot ? { snapshot } : {}),
+            }),
+          );
+      }
+    };
+    window.addEventListener('moirae:webmcp-result', handleWebMcpResult);
+    return () => window.removeEventListener('moirae:webmcp-result', handleWebMcpResult);
+  }, []);
+
   async function submitRequest() {
     const requestId = crypto.randomUUID();
     setState({ status: 'REQUESTED', requestId });
@@ -279,10 +299,18 @@ function PublicationResultView({
             </div>
           </dl>
           <div className="approval-actions">
-            <button type="button" onClick={() => onApprovalDecision('APPROVE')} disabled={approvalBusy}>
+            <button
+              type="button"
+              onClick={() => onApprovalDecision('APPROVE')}
+              disabled={approvalBusy}
+            >
               {approvalBusy ? 'Submitting…' : 'Approve'}
             </button>
-            <button type="button" onClick={() => onApprovalDecision('REJECT')} disabled={approvalBusy}>
+            <button
+              type="button"
+              onClick={() => onApprovalDecision('REJECT')}
+              disabled={approvalBusy}
+            >
               Reject
             </button>
           </div>
@@ -294,11 +322,15 @@ function PublicationResultView({
           <dl className="evidence-grid">
             <div>
               <dt>Agent</dt>
-              <dd>{result.outcome.evidence.authenticatedWorkloadIdentity?.actingPrincipalId ?? '—'}</dd>
+              <dd>
+                {result.outcome.evidence.authenticatedWorkloadIdentity?.actingPrincipalId ?? '—'}
+              </dd>
             </div>
             <div>
               <dt>Reason</dt>
-              <dd>{result.outcome.evidence.policyReason ?? result.outcome.reasonCode ?? 'DENIED'}</dd>
+              <dd>
+                {result.outcome.evidence.policyReason ?? result.outcome.reasonCode ?? 'DENIED'}
+              </dd>
             </div>
             <div>
               <dt>Approval request</dt>

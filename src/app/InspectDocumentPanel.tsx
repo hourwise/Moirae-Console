@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { requestInspectDocument } from '../inspection/client';
 import type { InspectionResult, LifecyclePhase } from '../inspection/types';
@@ -11,6 +11,18 @@ type PanelState =
 
 export function InspectDocumentPanel() {
   const [state, setState] = useState<PanelState>({ status: 'IDLE' });
+
+  useEffect(() => {
+    const handleWebMcpResult = (event: Event) => {
+      const detail = (event as CustomEvent<{ toolName?: string; result?: InspectionResult }>)
+        .detail;
+      if (detail?.toolName === 'inspect_document' && detail.result) {
+        setState({ status: 'RESULT', result: detail.result });
+      }
+    };
+    window.addEventListener('moirae:webmcp-result', handleWebMcpResult);
+    return () => window.removeEventListener('moirae:webmcp-result', handleWebMcpResult);
+  }, []);
 
   async function submitRequest() {
     const requestId = crypto.randomUUID();

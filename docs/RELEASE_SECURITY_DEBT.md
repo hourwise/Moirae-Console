@@ -29,8 +29,8 @@ MC-04 mutation-specific limitations:
 - Fates and Console replay/receipt consumption remain process-local demonstration mechanisms;
 - atomic rename and final digest verification are exercised locally, but durable power-loss
   reconciliation and operational effect recovery remain deployment work;
-- the Vite middleware remains a demonstration host boundary and has no deployed TLS/service
-  identity or operational monitoring;
+- the Vite middleware remains a development adapter; the Node production host boundary is
+  prepared but has no deployed TLS/service identity or operational monitoring;
 - browser-level automation remains environment-dependent and is not replaced by the host smoke.
 
 These items are intentionally recorded rather than hidden or resolved by dependency churn in
@@ -61,3 +61,22 @@ MC-06 denial-specific limitations:
   claim a signed receipt;
 - no deployed TLS/service identity, durable policy state, operational monitoring, or production
   operator/authentication boundary exists yet.
+
+MC-07 release-candidate limitations:
+
+- the Console production host is now a Node boundary for release preparation, but it is not
+  deployed or backed by production TLS/service identity;
+- the public-dependency distribution strategy requires the Ananke runtime and every required
+  dependency to be independently public, licensed, and reproducible before visibility changes;
+- process-local replay, approval, and publication reconciliation remain demonstration limits;
+- no distributed exactly-once effect guarantee is claimed;
+- the demonstration operator identity and restricted-agent credential are not production
+  authentication;
+- browser automation and WebMCP browser evidence remain release gates until verified in a usable
+  Chrome/Edge environment;
+- no public delete/reset operation exists, so repeated publication may report `ALREADY_PUBLISHED`
+  for the fixed destination;
+- dependency advisories and the inherited formatter baseline are recorded, not remediated in
+  MC-07 without separate authorization;
+- deployment monitoring, rollback rehearsal, secret-manager integration, and crash recovery
+  remain deployment work.

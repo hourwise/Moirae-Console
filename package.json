@@ -1,15 +1,18 @@
 {
   "name": "moirae-console",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "description": "The human- and agent-facing governance surface for The Fates.",
   "type": "module",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run build:server",
+    "build:server": "vite build --config vite.server.config.ts",
+    "start": "node dist-server/production-server.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --check .",

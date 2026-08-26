@@ -1,7 +1,5 @@
 /// <reference types="vitest/config" />
 
-import type { IncomingMessage, ServerResponse } from 'node:http';
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
@@ -10,7 +8,7 @@ import {
   createProductionInspectDocumentHttpHandler,
   createProductionPublishDocumentHttpHandler,
 } from './server/http-handler';
-import { setNoStoreResponseHeaders } from './server/http-response';
+import { decodePathname, handleMoiraeApiRequest, isHostOnlyPath } from './server/http-boundary';
 
 export default defineConfig({
   plugins: [react(), governedInspectDocumentPlugin()],
@@ -43,147 +41,16 @@ function governedInspectDocumentPlugin(): Plugin {
         next();
       });
 
-      server.middlewares.use('/api/inspect-document', (request, response) => {
-        if (request.method !== 'POST') {
-          response.statusCode = 405;
-          response.setHeader('Allow', 'POST');
-          response.end();
-          return;
-        }
-
-        void readJsonBody(request)
-          .then((payload) => handler.handle(payload))
-          .then((result) => sendJson(response, result))
-          .catch(() =>
-            sendJson(response, { error: 'BAD_REQUEST', reasonCode: 'INVALID_JSON' }, 400),
-          );
-      });
-
-      server.middlewares.use('/api/publish-document/status', (request, response) => {
-        if (request.method !== 'GET') {
-          response.statusCode = 405;
-          response.setHeader('Allow', 'GET');
-          response.end();
-          return;
-        }
-
-        void publicationHandler
-          .status()
-          .then((result) => sendJson(response, result))
-          .catch(() => sendJson(response, { error: 'PUBLICATION_STATUS_UNAVAILABLE' }, 503));
-      });
-
-      server.middlewares.use('/api/publish-document/approval', (request, response) => {
-        if (request.method !== 'POST') {
-          response.statusCode = 405;
-          response.setHeader('Allow', 'POST');
-          response.end();
-          return;
-        }
-
-        void readJsonBody(request)
-          .then((payload) => publicationHandler.decideApproval(payload))
-          .then((result) => sendJson(response, result))
-          .catch(() =>
-            sendJson(response, { error: 'BAD_REQUEST', reasonCode: 'INVALID_JSON' }, 400),
-          );
-      });
-
-      server.middlewares.use('/api/publish-document/deny-demo', (request, response) => {
-        if (request.method !== 'POST') {
-          response.statusCode = 405;
-          response.setHeader('Allow', 'POST');
-          response.end();
-          return;
-        }
-
-        void readJsonBody(request)
-          .then((payload) => {
-            if (!isEmptyObject(payload)) {
-              throw new Error('INVALID_DENY_DEMO_REQUEST');
-            }
-            return publicationHandler.denyDemo();
+      server.middlewares.use((request, response, next) => {
+        void handleMoiraeApiRequest(request, response, {
+          inspectHandler: handler,
+          publicationHandler,
+        })
+          .then((handled) => {
+            if (!handled) next();
           })
-          .then((result) => sendJson(response, result))
-          .catch(() =>
-            sendJson(response, { error: 'BAD_REQUEST', reasonCode: 'INVALID_DENY_DEMO_REQUEST' }, 400),
-          );
-      });
-
-      server.middlewares.use('/api/publish-document', (request, response) => {
-        if (request.method !== 'POST') {
-          response.statusCode = 405;
-          response.setHeader('Allow', 'POST');
-          response.end();
-          return;
-        }
-
-        void readJsonBody(request)
-          .then((payload) => publicationHandler.handle(payload))
-          .then((result) => sendJson(response, result))
-          .catch(() =>
-            sendJson(response, { error: 'BAD_REQUEST', reasonCode: 'INVALID_JSON' }, 400),
-          );
+          .catch(() => next());
       });
     },
   };
-}
-
-function decodePathname(url: string | undefined): string {
-  try {
-    return decodeURIComponent(new URL(url ?? '/', 'http://localhost').pathname);
-  } catch {
-    return '';
-  }
-}
-
-function isHostOnlyPath(pathname: string): boolean {
-  const normalized = pathname.replaceAll('\\', '/');
-  return (
-    normalized === '/server' ||
-    normalized.startsWith('/server/') ||
-    (normalized.startsWith('/@fs/') && normalized.includes('/server/'))
-  );
-}
-
-function readJsonBody(request: IncomingMessage): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    let bytes = 0;
-
-    request.on('data', (chunk: Buffer | string) => {
-      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-      bytes += buffer.length;
-      if (bytes > 64 * 1024) {
-        reject(new Error('REQUEST_TOO_LARGE'));
-        request.destroy();
-        return;
-      }
-      chunks.push(buffer);
-    });
-    request.on('end', () => {
-      try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown);
-      } catch {
-        reject(new Error('INVALID_JSON'));
-      }
-    });
-    request.on('error', reject);
-  });
-}
-
-function sendJson(response: ServerResponse, payload: unknown, statusCode = 200): void {
-  response.statusCode = statusCode;
-  response.setHeader('Content-Type', 'application/json; charset=utf-8');
-  setNoStoreResponseHeaders(response);
-  response.end(JSON.stringify(payload));
-}
-
-function isEmptyObject(value: unknown): value is Record<string, never> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    !Array.isArray(value) &&
-    Object.keys(value).length === 0
-  );
 }

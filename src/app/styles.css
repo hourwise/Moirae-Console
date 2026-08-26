@@ -95,6 +95,34 @@ h2 {
   line-height: 1.6;
 }
 
+.demo-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.demo-overview article {
+  padding: 1rem;
+  border: 1px solid #393a31;
+  border-radius: 0.75rem;
+  background: rgba(30, 32, 27, 0.64);
+}
+
+.demo-overview strong {
+  display: block;
+  color: #e8e5dc;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.demo-overview article p:last-child {
+  margin: 0.6rem 0 0;
+  color: #8c8b83;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
 .inspection-panel {
   margin-top: 1.5rem;
   padding: 1.5rem;
@@ -238,6 +266,10 @@ button:disabled {
   }
 
   .status-card {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-overview {
     grid-template-columns: 1fr;
   }
 

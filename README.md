@@ -1,71 +1,149 @@
 # Moirae Console
 
-Moirae Console is the human- and agent-facing governance surface for The Fates.
+Governed agent actions for the web.
 
-As applications expose structured actions to AI agents, discovering an action does not
-mean that the agent possesses authority to execute it. Moirae Console is intended to
-make that distinction visible and usable.
+WebMCP tells an agent what a website can do. The Fates determines what the
+agent is allowed to do. Moirae Console makes that boundary visible to the
+human.
 
-```text
-Capability ≠ Authority
-```
+## What the demo proves
+
+This release candidate exposes exactly two WebMCP tools:
+
+- `inspect_document` — request governed, read-only inspection of the fixed
+  `demo-policy-001` document.
+- `publish_document` — request governed publication of that same fixed
+  document to one fixed host-side destination.
+
+The human-facing screen shows three outcomes:
+
+1. `ALLOW` → `DISCLOSED`
+2. `REQUIRES_APPROVAL` → human `APPROVE` → `PUBLISHED`
+3. restricted caller `DENY` → `NOT EXECUTED`
+
+Approval and restricted-agent controls are Console presentation functions;
+they are not additional WebMCP tools.
 
 ## Architecture
 
 ```text
-Agent / WebMCP
-      ↓
-Moirae Console
-      ↓
-The Fates
-      ↓
-governed outcome
+AI agent
+   ↓ WebMCP: document.modelContext.registerTool()
+Moirae Console browser surface
+   ↓ same-origin bounded Console API
+Trusted Moirae host
+   ↓ authenticated POST /api/execute
+The Fates / Ananke
+   ↓ ALLOW / REQUIRES_APPROVAL / DENY
+Moirae host verifies evidence and performs the fixed effect
 ```
 
-The Console is a surface, not an authority. WebMCP is an inbound adapter: a discovered or
-invoked tool becomes a governed request at the Console/Fates boundary. MC-00 contains no
-direct WebMCP-to-side-effect path and no governed mutation implementation.
+Fates governs the action and authority. Moirae owns the application document
+and the host-side disclosure/publication effect. Capability discovery is not
+authority.
 
-## Current state
-
-This repository is at the **MC-03 fresh, replay-safe authoritative read-only disclosure stage**:
-
-- pre-production;
-- private development repository;
-- independently buildable and testable with deterministic synthetic tests plus a host-only Ananke transport;
-- no production deployment;
-- no containment or security-complete claim;
-- one bounded, read-only `inspect_document` demonstration path with exact digest verification,
-  bounded freshness, one-use receipt consumption, and no-store response controls;
-- no final WebMCP challenge workflow.
-
-The MC-03 demonstration uses a fixed host-side fixture and the canonical Ananke authority action
-`fates.moirae.inspect-document.v1`. Configure `ANANKE_MOIRAE_EXECUTION_TOKEN` only in the
-trusted host environment; missing or invalid transport remains fail-closed. Fates authorizes
-the exact resource and digest but does not read the fixture. The current authority guarantee is
-authenticated-transport-bound rather than a cryptographically signed receipt, and the bounded
-Console consumption store is not restart-persistent. Mutation, approval, and destructive
-workflows are later slices and are not implemented here.
-
-## Development
+## Run locally
 
 Requirements: Node.js 22.12 or newer and npm.
 
+The Console depends on a separately running Ananke authority. The public
+Ananke repository contains the runtime source; use the accepted MC-06
+checkpoint for this demonstration:
+
 ```shell
+git clone https://github.com/hourwise/Project-Ananke.git ../Project-Ananke
+cd ../Project-Ananke
+git checkout 693b386218e73afaa579cb6457f054007293581b
 npm ci
+npm run build
+npm run build -w @ananke/runtime-core
+npm start -w @ananke/runtime-core
+```
+
+Configure the required Ananke credentials only in the Ananke host process.
+Use local placeholder values, never values committed to a file:
+
+```shell
+ANANKE_MOIRAE_EXECUTION_TOKEN=<inspection-token>
+ANANKE_MOIRAE_PUBLISH_TOKEN=<publication-token>
+ANANKE_MOIRAE_APPROVER_TOKEN=<approver-token>
+ANANKE_MOIRAE_RESTRICTED_TOKEN=<restricted-token>
+```
+
+In a second terminal, from this repository:
+
+```shell
+npm ci --no-audit --no-fund
+npm run build
+set PORT=4173
+set ANANKE_MOIRAE_EXECUTION_URL=http://127.0.0.1:3000/api/execute
+set MOIRAE_PUBLICATION_STORE_ROOT=%TEMP%\moirae-console-publication
+npm start
+```
+
+PowerShell equivalents are:
+
+```powershell
+$env:PORT = '4173'
+$env:ANANKE_MOIRAE_EXECUTION_URL = 'http://127.0.0.1:3000/api/execute'
+$env:MOIRAE_PUBLICATION_STORE_ROOT = Join-Path $env:TEMP 'moirae-console-publication'
+npm start
+```
+
+Open `http://127.0.0.1:4173`. The production host serves only built assets,
+the bounded same-origin Console API, and `GET /healthz`. It does not serve
+source directories or expose Ananke to browser JavaScript.
+
+The host fails closed when the required Fates transport credentials are
+absent. The fixed document fixture and publication target remain host-side.
+
+## Try with an AI agent
+
+WebMCP is experimental. In Google Chrome, enable
+`chrome://flags/#enable-webmcp-testing`, relaunch Chrome, and open the live
+or local Console URL. ChatGPT's in-app browser supports WebMCP, but this
+repository does not claim that a ChatGPT-hosted deployment has been tested.
+
+Ask the agent to:
+
+1. inspect the demonstration policy document;
+2. observe Fates `ALLOW` and the governed disclosure;
+3. request publication of the demonstration document;
+4. observe `REQUIRES_APPROVAL` and use the human approval card;
+5. run the visible restricted-agent demonstration and observe Fates `DENY`
+   and `NOT EXECUTED`.
+
+The agent can discover only `inspect_document` and `publish_document`.
+It cannot choose Fates actions, credentials, callers, digests, destinations,
+purposes, approval states, or receipts.
+
+## Development checks
+
+```shell
+npm ci --no-audit --no-fund
 npm run typecheck
 npm run lint
-npm run format
 npm test
 npm run build
 npm run check:bundle
+npm audit --omit=optional
 ```
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/FATES_BOUNDARY.md`](docs/FATES_BOUNDARY.md),
-[`docs/WEBMCP_BOUNDARY.md`](docs/WEBMCP_BOUNDARY.md), and [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
-for the MC-00–MC-03 boundaries and limitations. Release security debt is tracked in
-[`docs/RELEASE_SECURITY_DEBT.md`](docs/RELEASE_SECURITY_DEBT.md).
+The inherited formatter baseline is reported separately in the release
+report and is not silently repaired by this candidate.
 
-## Licence
+## Security scope
 
-Moirae Console is released under the Apache License 2.0. See [`LICENSE`](LICENSE).
+This is a bounded hackathon/reference implementation, not a production
+security-complete system. Known limitations include process-local replay and
+approval state, demonstration-grade workload/operator identity, a bounded
+local publication store, authenticated-transport-bound rather than signed
+receipts, pending TLS/service identity, pending operational monitoring, and
+no distributed exactly-once guarantee.
+
+See [`SECURITY.md`](SECURITY.md), [`docs/RELEASE_SECURITY_DEBT.md`](docs/RELEASE_SECURITY_DEBT.md),
+and [`docs/CHALLENGE_DISTRIBUTION.md`](docs/CHALLENGE_DISTRIBUTION.md).
+
+## License
+
+Apache-2.0. See [`LICENSE`](LICENSE).
