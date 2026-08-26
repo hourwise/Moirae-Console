@@ -1,6 +1,6 @@
 # MC-12 public runtime distribution
 
-Status: **source-pinned; pending repository visibility and full public clean-room execution**.
+Status: **public source graph verified; anonymous clean-room execution complete**.
 
 This document records the smallest source graph needed to run the real
 hackathon authority path. It is a release-preparation document; it does not
@@ -29,9 +29,9 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 
 | Component                             | Exact source checkpoint                                                                                                 | Runtime role                                                       | Current source status                                         |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| Moirae Console                        | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus this document commit                                                    | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Local source is present; public visibility is not authorized  |
-| Project Ananke                        | `5fa868b0355c7e2f000ef80db5d27d5c6987e6f2` (runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Required; source repository is currently private |
-| Project-Adrasteia / Runtime Contracts | `release/webmcp-runtime-v0.6.2` → `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`) | Runtime contract package consumed by Ananke | Required; source repository is currently private |
+| Moirae Console                        | `40c85771cbd9a50c68062a0b7c2c9ee1c0c5d026` | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Public source; anonymous clean-room verified |
+| Project Ananke                        | `5fa868b0355c7e2f000ef80db5d27d5c6987e6f2` (runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Public source; anonymous clean-room verified |
+| Project-Adrasteia / Runtime Contracts | `release/webmcp-runtime-v0.6.2` → `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`) | Runtime contract package consumed by Ananke | Public source; anonymous exact-SHA fetch and clean-room build verified |
 
 The Console commit is the accepted MC-09 remediation checkpoint. The
 distribution documents are additional review material on the bounded MC-09
@@ -146,17 +146,13 @@ to browser JavaScript.
 The private artifact dependency has been removed from the active source path.
 The hackathon source is the exact `release/webmcp-runtime-v0.6.2` reference,
 not Project-Adrasteia `main`.
-The source dependency and two-build reproducibility controls pass. A complete
-public/no-credential runtime reproduction remains pending because Ananke and
-Project-Adrasteia are still private and MC-11 does not authorize changing
-their visibility.
+The source dependency, two-build reproducibility controls, anonymous source
+fetches, and source-only runtime clean-room pass. The clean-room exercised
+real inspection ALLOW/DISCLOSED, publication REQUIRE_APPROVAL with rejected
+agent self-approval and explicit operator approval, and restricted publication
+DENY/NOT_EXECUTED.
 
-The required follow-up is a separately reviewed public-source/release action:
-
-1. make the required source repositories legally and operationally publishable;
-2. run the full source-only clean-room build and real ALLOW,
-   REQUIRES_APPROVAL, human-approval, and DENY smokes;
-3. perform a separate visibility/release approval.
-
-Until then, the public distribution gate remains blocked rather than falling
-back to a fake authority runtime.
+Project Ananke and Project-Adrasteia are public source dependencies for this
+bounded challenge runtime. The four other Fates repositories remain outside
+the runtime graph and private. This is a source/reproducibility gate result,
+not a deployment, production-readiness, or npm-publication claim.

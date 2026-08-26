@@ -1,11 +1,11 @@
 {
   "schemaVersion": "mc-11.challenge-release-manifest.v1",
-  "status": "SOURCE_PINNED_PENDING_VISIBILITY_AND_CLEANROOM",
-  "visibilityChangeAuthorized": false,
+  "status": "PUBLIC_SOURCE_CLEANROOM_VALIDATED",
+  "visibilityChangeAuthorized": true,
   "deploymentAuthorized": false,
   "console": {
     "repository": "https://github.com/hourwise/Moirae-Console",
-    "sha": "0434c7b8e73b41c175a0b0fb3998f9c5cf4552de",
+    "sha": "40c85771cbd9a50c68062a0b7c2c9ee1c0c5d026",
     "license": "Apache-2.0",
     "runtimeRole": "WebMCP surface and trusted Moirae host boundary"
   },
@@ -19,7 +19,7 @@
       "license": "MIT",
       "runtimeRole": "Canonical authenticated Fates HTTP authority",
       "consumption": "source checkout/workspace build",
-      "publiclyReproducibleNow": false
+      "publiclyReproducibleNow": true
     },
     {
       "repository": "https://github.com/hourwise/Project-Adrasteia",
@@ -31,7 +31,7 @@
       "license": "MIT",
       "runtimeRole": "Ananke runtime contract dependency",
       "consumption": "exact HTTPS Git source pin in Ananke lockfile; npm prepare builds dist",
-      "publiclyReproducibleNow": false,
+      "publiclyReproducibleNow": true,
       "mainLineageSha": "f9eeb25076e0a590f13c7bed6c8de8c9a363ce1b",
       "mainLineageVersion": "0.4.0",
       "mainLineageRole": "separate older Project-Adrasteia lineage; not used by the hackathon runtime",
