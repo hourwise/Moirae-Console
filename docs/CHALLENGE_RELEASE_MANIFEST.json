@@ -12,7 +12,8 @@
   "requiredRuntimeSources": [
     {
       "repository": "https://github.com/hourwise/Project-Ananke",
-      "sha": "693b386218e73afaa579cb6457f054007293581b",
+      "sha": "0afd16ac3827c568bf3d3a4affcaf85ada7800b2",
+      "runtimeBaseSha": "693b386218e73afaa579cb6457f054007293581b",
       "provenanceBranch": "codex/mc-10-public-runtime-provenance",
       "provenanceCommit": "0afd16a",
       "license": "MIT",

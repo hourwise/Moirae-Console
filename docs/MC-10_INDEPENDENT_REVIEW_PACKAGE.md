@@ -17,7 +17,8 @@ pass conclusion.
 ```text
 Moirae Console 0434c7b8e73b41c175a0b0fb3998f9c5cf4552de
         ↓ authenticated POST /api/execute
-Project Ananke 693b386218e73afaa579cb6457f054007293581b
+Project Ananke 0afd16ac3827c568bf3d3a4affcaf85ada7800b2
+        (runtime base 693b386218e73afaa579cb6457f054007293581b)
         ↓ @ananke/adrasteia-adapter
 project-runtime-contracts 0.6.2
         ↓ Project-Adrasteia 6aba3ef466a16292689d4afaf9f9bc40dc013301
@@ -29,11 +30,11 @@ are not imported or installed by the exact runtime path.
 
 ## License/provenance checkpoints
 
-| Component         | Checkpoint                                                            | Declared license | Root license                | Public state at audit         |
-| ----------------- | --------------------------------------------------------------------- | ---------------- | --------------------------- | ----------------------------- |
-| Console           | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus MC-10 docs            | Apache-2.0       | Present                     | public release not authorized |
-| Ananke            | `693b386218e73afaa579cb6457f054007293581b` / license branch `0afd16a` | MIT              | Present on branch `0afd16a` | source repo private           |
-| Project-Adrasteia | `6aba3ef466a16292689d4afaf9f9bc40dc013301`                            | MIT              | Present                     | source/release private        |
+| Component         | Checkpoint                                                                                   | Declared license | Root license | Public state at audit         |
+| ----------------- | -------------------------------------------------------------------------------------------- | ---------------- | ------------ | ----------------------------- |
+| Console           | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus MC-10 docs                                   | Apache-2.0       | Present      | public release not authorized |
+| Ananke            | `0afd16ac3827c568bf3d3a4affcaf85ada7800b2` (base `693b386218e73afaa579cb6457f054007293581b`) | MIT              | Present      | source repo private           |
+| Project-Adrasteia | `6aba3ef466a16292689d4afaf9f9bc40dc013301`                                                   | MIT              | Present      | source/release private        |
 
 The exact Ananke lockfile points to a Project-Adrasteia release tarball. A
 fresh build from the accepted source has the same package file set but differs

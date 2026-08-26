@@ -27,11 +27,11 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 
 ## Required source set
 
-| Component                             | Exact source checkpoint                                                        | Runtime role                                                       | Current source status                                         |
-| ------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| Moirae Console                        | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus this document commit           | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Local source is present; public visibility is not authorized  |
-| Project Ananke                        | `693b386218e73afaa579cb6457f054007293581b` plus MC-10 license branch `0afd16a` | Canonical authenticated Fates HTTP authority                       | Required; source repository is currently private              |
-| Project-Adrasteia / Runtime Contracts | `6aba3ef466a16292689d4afaf9f9bc40dc013301`                                     | Runtime contract package consumed by Ananke                        | Required; source repository and release are currently private |
+| Component                             | Exact source checkpoint                                                                                                 | Runtime role                                                       | Current source status                                         |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Moirae Console                        | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus this document commit                                                    | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Local source is present; public visibility is not authorized  |
+| Project Ananke                        | `0afd16ac3827c568bf3d3a4affcaf85ada7800b2` (license-corrected; runtime base `693b386218e73afaa579cb6457f054007293581b`) | Canonical authenticated Fates HTTP authority                       | Required; source repository is currently private              |
+| Project-Adrasteia / Runtime Contracts | `6aba3ef466a16292689d4afaf9f9bc40dc013301`                                                                              | Runtime contract package consumed by Ananke                        | Required; source repository and release are currently private |
 
 The Console commit is the accepted MC-09 remediation checkpoint. The
 distribution documents are additional review material on the bounded MC-09
