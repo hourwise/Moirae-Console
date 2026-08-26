@@ -57,6 +57,13 @@ export interface GovernanceEvidence {
   readonly auditId?: string;
   readonly outcomeState?: string;
   readonly policyDecision?: string;
+  readonly approvalRequestId?: string;
+  readonly approvalState?: string;
+  readonly approvalActionHash?: string;
+  readonly approvalOperatorId?: string;
+  readonly approvalOperatorSessionId?: string;
+  readonly approvalDecision?: string;
+  readonly requestedAt?: string;
   readonly effectSemantics?: string;
   readonly fatesResourceReadAttemptCount?: number;
   readonly fatesPublicationAttemptCount?: number;

@@ -63,7 +63,7 @@ export class PublishDocumentService {
       return notPublished(
         snapshot,
         outcome,
-        phases,
+        phasesForOutcome(phases, outcome),
         evidenceMode,
         reasonForNoPublication(outcome, snapshot, nowMs),
       );
@@ -91,6 +91,13 @@ export class PublishDocumentService {
 
     const allowedPhases: PublicationLifecyclePhase[] = [
       ...phases,
+      ...(outcome.status === 'REQUIRES_APPROVAL'
+        ? [{
+            name: 'APPROVAL REQUIRED' as const,
+            source: 'fates-authoritative' as const,
+            evidenceId: outcome.evidence.evidenceId,
+          }]
+        : []),
       {
         name: 'ALLOWED',
         source: 'fates-authoritative',
@@ -195,6 +202,7 @@ function mayPublish(
     evidence.destinationId === MOIRAE_PUBLICATION_DESTINATION_ID &&
     evidence.purpose === MOIRAE_PUBLICATION_FATES_PURPOSE &&
     nonEmptyString(evidence.fatesRequestId) &&
+    (evidence.approvalState !== 'APPROVED' || evidence.fatesRequestId === request.requestId) &&
     evidence.correlationId === request.requestId &&
     evidence.canonicalRequestDigest ===
       calculateMoiraePublicationRequestDigest({
@@ -277,6 +285,21 @@ function notPublished(
   };
 }
 
+function phasesForOutcome(
+  phases: readonly PublicationLifecyclePhase[],
+  outcome: GovernanceOutcome,
+): readonly PublicationLifecyclePhase[] {
+  if (outcome.status !== 'REQUIRES_APPROVAL') return phases;
+  return [
+    ...phases,
+    {
+      name: 'APPROVAL REQUIRED',
+      source: 'fates-authoritative',
+      evidenceId: outcome.evidence.evidenceId,
+    },
+  ];
+}
+
 function reasonForNoPublication(
   outcome: GovernanceOutcome,
   request: GovernedRequest,
@@ -284,8 +307,22 @@ function reasonForNoPublication(
 ): string {
   if (outcome.requestId !== request.requestId) return 'REQUEST_ID_MISMATCH';
   if (!isExactPublishRequest(request)) return 'PUBLICATION_REQUEST_INVALID';
-  if (outcome.status === 'REQUIRES_APPROVAL') return 'APPROVAL_NOT_IMPLEMENTED';
-  if (outcome.status === 'FAILED' && outcome.errorCode === 'CONFLICT') return 'REPLAY_REJECTED';
+  if (outcome.status === 'REQUIRES_APPROVAL') return 'APPROVAL_REQUIRED';
+  if (outcome.status === 'DENIED' && outcome.evidence.approvalState === 'EXPIRED') {
+    return 'APPROVAL_EXPIRED';
+  }
+  if (outcome.status === 'DENIED' && outcome.evidence.approvalState === 'REJECTED') {
+    return 'APPROVAL_REJECTED';
+  }
+  if (
+    outcome.status === 'FAILED' &&
+    (outcome.errorCode === 'CONFLICT' ||
+      outcome.errorCode === 'APPROVAL_ALREADY_CONSUMED' ||
+      outcome.errorCode === 'APPROVAL_INVALIDATED' ||
+      outcome.errorCode === 'APPROVAL_HASH_MISMATCH')
+  ) {
+    return 'REPLAY_REJECTED';
+  }
   if (outcome.status === 'FAILED' && outcome.errorCode === 'STALE_STATE') return 'STALE_AUTHORITY';
   if (outcome.status === 'ALLOWED') {
     const expiresAtMs = Date.parse(outcome.evidence.expiresAt ?? '');

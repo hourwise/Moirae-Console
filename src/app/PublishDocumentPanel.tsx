@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 
-import { requestPublicationStatus, requestPublishDocument } from '../publication/client';
+import {
+  decidePublicationApproval,
+  requestPublicationStatus,
+  requestPublishDocument,
+} from '../publication/client';
 import type {
   PublicationLifecyclePhase,
   PublicationResult,
@@ -14,11 +18,13 @@ type PanelState =
       readonly status: 'RESULT';
       readonly result: PublicationResult;
       readonly snapshot?: PublicationStatusSnapshot;
+      readonly message?: string;
     }
   | { readonly status: 'ERROR'; readonly requestId: string; readonly message: string };
 
 export function PublishDocumentPanel() {
   const [state, setState] = useState<PanelState>({ status: 'IDLE' });
+  const [approvalBusy, setApprovalBusy] = useState(false);
 
   useEffect(() => {
     void requestPublicationStatus()
@@ -43,6 +49,26 @@ export function PublishDocumentPanel() {
     }
   }
 
+  async function decideApproval(decision: 'APPROVE' | 'REJECT') {
+    if (state.status !== 'RESULT' || state.result.approval?.state !== 'WAITING_FOR_APPROVAL') {
+      return;
+    }
+    const approvalRequestId = state.result.approval.approvalRequestId;
+    setApprovalBusy(true);
+    try {
+      const result = await decidePublicationApproval(approvalRequestId, decision);
+      const snapshot = await requestPublicationStatus().catch(() => undefined);
+      setState({ status: 'RESULT', result, ...(snapshot ? { snapshot } : {}) });
+    } catch (error) {
+      setState({
+        ...state,
+        message: error instanceof Error ? error.message : 'APPROVAL_DECISION_FAILED',
+      });
+    } finally {
+      setApprovalBusy(false);
+    }
+  }
+
   const phases = phasesFor(state);
   const result = state.status === 'RESULT' ? state.result : undefined;
   const snapshot =
@@ -55,8 +81,12 @@ export function PublishDocumentPanel() {
           <p className="card-label">MC-04 governed mutation</p>
           <h2 id="publication-heading">publish_document</h2>
         </div>
-        <button type="button" onClick={submitRequest} disabled={state.status === 'REQUESTED'}>
-          {state.status === 'REQUESTED' ? 'Publishing…' : 'Request publication'}
+        <button
+          type="button"
+          onClick={submitRequest}
+          disabled={state.status === 'REQUESTED' || approvalBusy}
+        >
+          {state.status === 'REQUESTED' ? 'Requesting…' : 'Request publication'}
         </button>
       </div>
 
@@ -80,13 +110,30 @@ export function PublishDocumentPanel() {
           NOT PUBLISHED · {state.message} · {state.requestId}
         </p>
       )}
+      {state.status === 'RESULT' && state.message && (
+        <p className="result-note">DECISION NOT CONFIRMED · {state.message}</p>
+      )}
       {snapshot && <PublicationStatusView snapshot={snapshot} />}
-      {result && <PublicationResultView result={result} />}
+      {result && (
+        <PublicationResultView
+          result={result}
+          approvalBusy={approvalBusy}
+          onApprovalDecision={decideApproval}
+        />
+      )}
     </section>
   );
 }
 
-function PublicationResultView({ result }: { readonly result: PublicationResult }) {
+function PublicationResultView({
+  result,
+  approvalBusy,
+  onApprovalDecision,
+}: {
+  readonly result: PublicationResult;
+  readonly approvalBusy: boolean;
+  readonly onApprovalDecision: (decision: 'APPROVE' | 'REJECT') => void;
+}) {
   return (
     <div className="inspection-result">
       <dl className="evidence-grid">
@@ -101,6 +148,10 @@ function PublicationResultView({ result }: { readonly result: PublicationResult 
         <div>
           <dt>Decision</dt>
           <dd>{result.outcome.status}</dd>
+        </div>
+        <div>
+          <dt>Approval</dt>
+          <dd>{result.approval?.state ?? '—'}</dd>
         </div>
         <div>
           <dt>Publication</dt>
@@ -175,6 +226,37 @@ function PublicationResultView({ result }: { readonly result: PublicationResult 
           <dd>{formatProvenance(result.outcome.evidence.provenance)}</dd>
         </div>
       </dl>
+      {result.approval?.state === 'WAITING_FOR_APPROVAL' && (
+        <div className="approval-card" aria-label="Human publication approval">
+          <p className="card-label">Fates-authoritative approval request</p>
+          <dl className="evidence-grid">
+            <div>
+              <dt>Action</dt>
+              <dd>Publish document</dd>
+            </div>
+            <div>
+              <dt>Document</dt>
+              <dd>demo-policy-001</dd>
+            </div>
+            <div>
+              <dt>Destination</dt>
+              <dd>Demo publication slot</dd>
+            </div>
+            <div>
+              <dt>Expires</dt>
+              <dd>{result.approval.expiresAt ?? '—'}</dd>
+            </div>
+          </dl>
+          <div className="approval-actions">
+            <button type="button" onClick={() => onApprovalDecision('APPROVE')} disabled={approvalBusy}>
+              {approvalBusy ? 'Submitting…' : 'Approve'}
+            </button>
+            <button type="button" onClick={() => onApprovalDecision('REJECT')} disabled={approvalBusy}>
+              Reject
+            </button>
+          </div>
+        </div>
+      )}
       {result.publication.state === 'NOT_PUBLISHED' && (
         <p className="result-note">
           NOT PUBLISHED · {result.publication.reasonCode ?? result.outcome.status}

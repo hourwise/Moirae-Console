@@ -2,6 +2,8 @@ import type { PublicationResult, PublicationStatusSnapshot } from './types';
 import { DEMO_DOCUMENT_ID } from '../webmcp/inspect-document';
 import { PUBLISH_DOCUMENT_ACTION } from '../webmcp/publish-document';
 
+export type PublicationApprovalDecision = 'APPROVE' | 'REJECT';
+
 export async function requestPublishDocument(
   requestId = crypto.randomUUID(),
 ): Promise<PublicationResult> {
@@ -36,4 +38,21 @@ export async function requestPublicationStatus(): Promise<PublicationStatusSnaps
     throw new Error(`PUBLICATION_STATUS_HTTP_${response.status}`);
   }
   return (await response.json()) as PublicationStatusSnapshot;
+}
+
+export async function decidePublicationApproval(
+  approvalRequestId: string,
+  decision: PublicationApprovalDecision,
+): Promise<PublicationResult> {
+  const response = await fetch('/api/publish-document/approval', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approvalRequestId, decision }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`PUBLISH_DOCUMENT_APPROVAL_HTTP_${response.status}`);
+  }
+
+  return (await response.json()) as PublicationResult;
 }

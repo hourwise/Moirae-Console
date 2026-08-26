@@ -13,15 +13,33 @@ import {
 } from './moirae-publication-authority';
 
 export const ANANKE_PUBLICATION_EXECUTION_TOKEN_ENV = 'ANANKE_MOIRAE_PUBLISH_TOKEN';
+export const ANANKE_PUBLICATION_APPROVER_TOKEN_ENV = 'ANANKE_MOIRAE_APPROVER_TOKEN';
+
+export type PublicationApprovalDecision = 'APPROVE' | 'REJECT';
+
+export interface AnankeApprovalTransition {
+  readonly approvalRequestId: string;
+  readonly approvalState: 'APPROVED' | 'REJECTED' | 'EXPIRED';
+  readonly decisionId?: string;
+  readonly auditId?: string;
+  readonly operatorId?: string;
+}
+
+export interface AnankePublicationApprovalTransport {
+  approve(request: GovernedRequest, approvalRequestId: string): Promise<AnankeApprovalTransition>;
+  reject(request: GovernedRequest, approvalRequestId: string): Promise<AnankeApprovalTransition>;
+  executeApproved(request: GovernedRequest, approvalRequestId: string): Promise<FatesTransportResponse>;
+}
 
 export interface AnankePublicationTransportOptions {
   readonly endpoint: string;
   readonly token: string;
+  readonly approverToken?: string;
   readonly timeoutMs?: number;
   readonly fetchImplementation?: typeof fetch;
 }
 
-export class AnankePublicationFatesTransport implements FatesTransport {
+export class AnankePublicationFatesTransport implements FatesTransport, AnankePublicationApprovalTransport {
   private readonly timeoutMs: number;
   private readonly fetchImplementation: typeof fetch;
 
@@ -36,6 +54,36 @@ export class AnankePublicationFatesTransport implements FatesTransport {
 
   public async send(request: GovernedRequest): Promise<FatesTransportResponse> {
     assertExactConsoleRequest(request);
+    return this.sendExecution(request);
+  }
+
+  public async executeApproved(
+    request: GovernedRequest,
+    approvalRequestId: string,
+  ): Promise<FatesTransportResponse> {
+    assertApprovalRequestId(approvalRequestId);
+    assertExactConsoleRequest(request);
+    return this.sendExecution(request, approvalRequestId);
+  }
+
+  public async approve(
+    request: GovernedRequest,
+    approvalRequestId: string,
+  ): Promise<AnankeApprovalTransition> {
+    return this.sendApprovalDecision(request, approvalRequestId, 'APPROVE');
+  }
+
+  public async reject(
+    request: GovernedRequest,
+    approvalRequestId: string,
+  ): Promise<AnankeApprovalTransition> {
+    return this.sendApprovalDecision(request, approvalRequestId, 'REJECT');
+  }
+
+  private async sendExecution(
+    request: GovernedRequest,
+    approvalRequestId?: string,
+  ): Promise<FatesTransportResponse> {
     const correlationId = request.requestId;
     const binding: FatesTransportBinding = {
       ...MOIRAE_PUBLICATION_AUTHORITY_BINDING,
@@ -50,6 +98,7 @@ export class AnankePublicationFatesTransport implements FatesTransport {
         headers: {
           Authorization: `Bearer ${this.options.token}`,
           'Content-Type': 'application/json',
+          'X-Ananke-Request-Id': request.requestId,
           'X-Ananke-Correlation-Id': correlationId,
         },
         body: JSON.stringify({
@@ -60,6 +109,7 @@ export class AnankePublicationFatesTransport implements FatesTransport {
             destinationId: MOIRAE_PUBLICATION_AUTHORITY_BINDING.destinationId,
           },
           purpose: MOIRAE_PUBLICATION_FATES_PURPOSE,
+          ...(approvalRequestId ? { approvalId: approvalRequestId } : {}),
         }),
         signal: controller.signal,
       });
@@ -73,20 +123,96 @@ export class AnankePublicationFatesTransport implements FatesTransport {
       clearTimeout(timeout);
     }
   }
+
+  private async sendApprovalDecision(
+    request: GovernedRequest,
+    approvalRequestId: string,
+    decision: PublicationApprovalDecision,
+  ): Promise<AnankeApprovalTransition> {
+    assertApprovalRequestId(approvalRequestId);
+    assertExactConsoleRequest(request);
+    if (!this.options.approverToken?.trim()) {
+      throw new Error('ANANKE_MOIRAE_APPROVER_TOKEN_UNAVAILABLE');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const response = await this.fetchImplementation(
+        approvalEndpoint(this.options.endpoint, approvalRequestId, decision),
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.options.approverToken}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        },
+      );
+      const raw = await response.json().catch(() => undefined);
+      const transition = parseApprovalTransition(raw, approvalRequestId);
+      if (!response.ok && !transition) {
+        throw new Error(`ANANKE_APPROVAL_HTTP_${response.status}`);
+      }
+      if (!transition) {
+        throw new Error('ANANKE_APPROVAL_MALFORMED_RESPONSE');
+      }
+      return transition;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
 }
 
 export function createAnankePublicationFatesTransportFromEnvironment(
   env: NodeJS.ProcessEnv = process.env,
   fetchImplementation: typeof fetch = fetch,
-): FatesTransport | undefined {
+): AnankePublicationFatesTransport | undefined {
   const token = env[ANANKE_PUBLICATION_EXECUTION_TOKEN_ENV];
   if (!token || !token.trim()) return undefined;
   const endpoint = env.ANANKE_MOIRAE_EXECUTION_URL ?? 'http://127.0.0.1:3000/api/execute';
+  const approverToken = env[ANANKE_PUBLICATION_APPROVER_TOKEN_ENV];
   try {
-    return new AnankePublicationFatesTransport({ endpoint, token, fetchImplementation });
+    return new AnankePublicationFatesTransport({
+      endpoint,
+      token,
+      ...(approverToken ? { approverToken } : {}),
+      fetchImplementation,
+    });
   } catch {
     return undefined;
   }
+}
+
+function approvalEndpoint(
+  executeEndpoint: string,
+  approvalRequestId: string,
+  decision: PublicationApprovalDecision,
+): string {
+  return `${executeEndpoint.slice(0, -'/execute'.length)}/approvals/${encodeURIComponent(approvalRequestId)}/${decision === 'APPROVE' ? 'approve' : 'reject'}`;
+}
+
+function parseApprovalTransition(value: unknown, approvalRequestId: string): AnankeApprovalTransition | undefined {
+  if (!isRecord(value)) return undefined;
+  const id = stringValue(value.approvalRequestId);
+  const state = stringValue(value.approvalState);
+  if (id !== approvalRequestId || (state !== 'APPROVED' && state !== 'REJECTED' && state !== 'EXPIRED')) {
+    return undefined;
+  }
+  const transition = isRecord(value.transition) ? value.transition : undefined;
+  return {
+    approvalRequestId: id,
+    approvalState: state,
+    ...(transition && stringValue(transition.decisionId)
+      ? { decisionId: stringValue(transition.decisionId) }
+      : {}),
+    ...(transition && stringValue(transition.auditId)
+      ? { auditId: stringValue(transition.auditId) }
+      : {}),
+    ...(transition && stringValue(transition.operatorId)
+      ? { operatorId: stringValue(transition.operatorId) }
+      : {}),
+  };
 }
 
 function assertExactConsoleRequest(request: GovernedRequest): void {
@@ -112,6 +238,16 @@ function assertExecuteEndpoint(value: string): void {
   }
 }
 
+function assertApprovalRequestId(value: string): void {
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(value)) {
+    throw new Error('MOIRAE_APPROVAL_REQUEST_ID_INVALID');
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
 }

@@ -213,6 +213,24 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+.approval-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #766331;
+  border-radius: 0.5rem;
+  background: rgba(118, 99, 49, 0.1);
+}
+
+.approval-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.approval-actions button:last-child {
+  color: #e8e5dc;
+  background: transparent;
+}
+
 @media (max-width: 600px) {
   .console-shell {
     width: min(100% - 2rem, 62rem);

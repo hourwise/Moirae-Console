@@ -214,7 +214,14 @@ function parseAnankeOutcome(
     case 'WAITING_FOR_APPROVAL': {
       const bindingId = stringValue(raw.approvalGrantId);
       return bindingId
-        ? { ...base, status: 'REQUIRES_APPROVAL', approvalBinding: { bindingId } }
+        ? {
+            ...base,
+            status: 'REQUIRES_APPROVAL',
+            approvalBinding: {
+              bindingId,
+              ...(evidence.expiresAt ? { freshnessUntil: evidence.expiresAt } : {}),
+            },
+          }
         : unknownOutcome(requestId, 'MALFORMED_APPROVAL_BINDING');
     }
     case 'FAILED':
@@ -279,6 +286,13 @@ function parseAnankeEvidence(
     auditId: stringValue(value.auditId),
     outcomeState,
     policyDecision: stringValue(value.policyDecision),
+    approvalRequestId: stringValue(value.approvalRequestId),
+    approvalState: stringValue(value.approvalState),
+    approvalActionHash: stringValue(value.approvalActionHash),
+    approvalOperatorId: stringValue(value.approvalOperatorId),
+    approvalOperatorSessionId: stringValue(value.approvalOperatorSessionId),
+    approvalDecision: stringValue(value.approvalDecision),
+    requestedAt: stringValue(value.requestedAt),
     policyVersion: stringValue(value.policyVersion),
     effectSemantics: stringValue(value.effectSemantics),
     fatesResourceReadAttemptCount:

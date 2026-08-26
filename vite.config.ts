@@ -73,6 +73,22 @@ function governedInspectDocumentPlugin(): Plugin {
           .catch(() => sendJson(response, { error: 'PUBLICATION_STATUS_UNAVAILABLE' }, 503));
       });
 
+      server.middlewares.use('/api/publish-document/approval', (request, response) => {
+        if (request.method !== 'POST') {
+          response.statusCode = 405;
+          response.setHeader('Allow', 'POST');
+          response.end();
+          return;
+        }
+
+        void readJsonBody(request)
+          .then((payload) => publicationHandler.decideApproval(payload))
+          .then((result) => sendJson(response, result))
+          .catch(() =>
+            sendJson(response, { error: 'BAD_REQUEST', reasonCode: 'INVALID_JSON' }, 400),
+          );
+      });
+
       server.middlewares.use('/api/publish-document', (request, response) => {
         if (request.method !== 'POST') {
           response.statusCode = 405;

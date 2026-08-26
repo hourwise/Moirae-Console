@@ -161,3 +161,33 @@ The publication workload profile is separate from the inspection profile and is 
 fixed document, `publish` operation, and `moirae.demo-publication-slot.v1` destination. The
 publication credential is host-only. This Vite middleware and file store remain demonstration
 composition and are not a production deployment boundary.
+
+## MC-05 human approval
+
+MC-05 keeps the two-tool WebMCP surface and adds approval only to the human-facing Console
+surface. The flow is:
+
+```text
+WebMCP publish_document
+  → immutable Console request snapshot
+  → authenticated Ananke POST /api/execute
+  → Fates REQUIRES_APPROVAL + opaque approvalRequestId
+  → Console approval card (presentation only)
+  → trusted host approval transition in Fates
+  → same request + approvalId → fresh one-use authority
+  → fixed-byte digest check → existing atomic publication store
+```
+
+Ananke owns whether approval is required, the pending record, its expiry, the operator
+transition, and the exact action/resource/context binding. The Console keeps only a bounded
+process-local correlation from the opaque pending identity to the immutable original request;
+that map is not authority and cannot approve, extend, or replace the operation. The browser
+sends no action, digest, destination, purpose, expiry, receipt, or credential.
+
+The tracked server composition uses the existing Ananke approval engine with a publication-only
+operator allowlist, a 30-second host-defined approval lifetime (maximum 60 seconds), and a
+distinct `ANANKE_MOIRAE_APPROVER_TOKEN`. After approval, Ananke's normal `/api/execute` path
+issues the existing short-lived one-use authority; Fates still performs no document read or
+publication. The authority is `AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`, not a signed receipt.
+Operator authentication, durable pending/replay persistence, TLS/service identity, and the
+Vite host remain demonstration limitations.

@@ -35,3 +35,17 @@ MC-04 mutation-specific limitations:
 
 These items are intentionally recorded rather than hidden or resolved by dependency churn in
 this bounded slice.
+
+MC-05 approval-specific limitations:
+
+- the demonstration operator uses a distinct host-side bearer token and fixed operator identity;
+  production operator authentication/SSO is pending;
+- pending approvals, operator sessions, and replay/consumption records are process-local and
+  are not restart-persistent;
+- approval lifetime is host-configured (30 seconds by default, bounded to 60 seconds) and is
+  not a durable workflow guarantee;
+- the Console approval correlation map is bounded and local; it is not an authority store;
+- Fates approval and execution receipts remain unsigned; the guarantee is
+  `AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`;
+- production host/service identity, TLS, durable recovery, monitoring, and browser automation
+  remain deployment/release work.

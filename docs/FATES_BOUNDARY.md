@@ -175,3 +175,30 @@ cryptographically signed receipt is claimed. Fates replay state and the Console 
 remain the accepted MC-03 process-local demonstration mechanisms. The publication file store
 is also demonstration-only; durable cross-restart effect reconciliation, TLS/service identity,
 operational monitoring, and deployment hardening remain release work.
+
+## MC-05 human approval
+
+MC-05 uses the existing canonical Ananke approval engine; it does not add a Moirae policy
+engine or a new WebMCP tool. The tracked publication composition configures the exact canonical
+action `fates.moirae.publish-document.v1` to return `REQUIRE_APPROVAL` initially. The pending
+result is authoritative evidence bound to the fixed action, document ID, expected digest,
+destination, purpose, authenticated workload, acting principal, original request ID,
+correlation ID, canonical request digest, authority-binding digest, approval identity, issue
+time, and expiry.
+
+The browser receives only the opaque `approvalRequestId` and renders the fixed operation. A
+human decision is sent through the trusted Console host to Ananke's authenticated approval
+endpoint with the distinct host-side `ANANKE_MOIRAE_APPROVER_TOKEN`. The tracked demonstration
+operator is `moirae-demo-operator`, scoped to the publication action; this is not production
+SSO or human authentication. A rejected or expired record is terminal. An approved record is
+then re-submitted through the same authenticated `/api/execute` path with the exact original
+request and correlation identity. Ananke validates the approval binding and only then issues a
+fresh short-lived one-use publication authority.
+
+Fates does not possess, read, or publish the Moirae document. Approval completion and publication
+completion remain separate: Fates records the approval transition and authority, while the
+Moirae host verifies the fixed source bytes and performs the existing atomic publication. The
+integrity status remains `AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`; canonical digests and
+authenticated transport are present, but MC-05 does not claim cryptographically signed
+receipts. The approval store and operator sessions are process-local demonstration state and
+are not restart-persistent.

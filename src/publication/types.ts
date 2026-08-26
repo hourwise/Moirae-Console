@@ -1,7 +1,16 @@
 import type { GovernanceOutcome, GovernedRequest } from '../fates/types';
 
 export type PublicationLifecyclePhaseName =
-  'REQUESTED' | 'IDENTIFIED' | 'FATES GOVERNANCE' | 'ALLOWED' | 'HOST EXECUTION' | 'PUBLISHED';
+  | 'REQUESTED'
+  | 'IDENTIFIED'
+  | 'FATES GOVERNANCE'
+  | 'APPROVAL REQUIRED'
+  | 'APPROVED'
+  | 'ALLOWED'
+  | 'HOST EXECUTION'
+  | 'PUBLISHED'
+  | 'REJECTED'
+  | 'EXPIRED';
 
 export type PublicationLifecyclePhaseSource =
   'local-observed' | 'fates-authoritative' | 'host-executed' | 'synthetic-test-only';
@@ -16,6 +25,14 @@ export interface PublicationResult {
   readonly request: GovernedRequest;
   readonly outcome: GovernanceOutcome;
   readonly phases: readonly PublicationLifecyclePhase[];
+  readonly approval?: {
+    readonly approvalRequestId: string;
+    readonly state: 'WAITING_FOR_APPROVAL' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+    readonly expiresAt?: string;
+    readonly decisionId?: string;
+    readonly auditId?: string;
+    readonly operatorId?: string;
+  };
   readonly publication: {
     readonly state: 'PUBLISHED' | 'NOT_PUBLISHED';
     readonly evidenceMode: 'AUTHORITATIVE' | 'SYNTHETIC_TEST_ONLY' | 'UNVERIFIED';

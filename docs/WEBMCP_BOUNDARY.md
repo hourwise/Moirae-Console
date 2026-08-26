@@ -83,9 +83,30 @@ boundary.
 | MC-02 | `inspect_document` | live authoritative transport               |
 | MC-03 | `inspect_document` | fresh, one-use authoritative receipt       |
 | MC-04 | `publish_document` | fixed, governed, host-executed publication |
+| MC-05 | `publish_document` | Fates-owned human approval before publication |
 
 MC-03 keeps the exact one-tool surface and adds no mutation, approval, or destructive challenge
 workflow. Freshness and receipt consumption are host/Fates controls, not WebMCP input. The
 browser cannot choose `issuedAt`, `expiresAt`, `receiptId`, `nonce`, or consumed state; a failed
 or replayed request remains `NOT_DISCLOSED`; a denied, stale, replayed, or mismatched
 publication remains `NOT_PUBLISHED`.
+
+## MC-05 approval boundary
+
+Approval is not a third WebMCP capability. The exposed surface remains exactly
+`inspect_document` and `publish_document`. The publish proposal may receive an authoritative
+`REQUIRES_APPROVAL` result, but that result is not executable authority and the UI cannot turn it
+into `ALLOW`.
+
+The human-facing Console sends only a bounded object containing an opaque `approvalRequestId`
+and an explicit `APPROVE` or `REJECT` decision. The host resolves the pending record through
+Fates; the browser cannot choose the action, document, digest, destination, purpose, caller,
+expiry, receipt, nonce, or operator credential. An approve click is therefore a request for a
+new authoritative Fates transition, not a local state update. Only after Fates reports the exact
+pending request approved does the host submit the same immutable request with the approval ID to
+obtain fresh one-use execution authority.
+
+Reject and expiry are terminal and publish nothing. Approval identifiers and authority material
+do not enter browser URLs. Approval endpoints and responses use the existing no-store controls.
+The operator credential remains host-only; the demonstration operator model is not a production
+authentication boundary.
