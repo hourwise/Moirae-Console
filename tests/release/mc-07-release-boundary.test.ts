@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { isHostOnlyPath } from '../../server/http-boundary';
+
 const repositoryRoot = process.cwd();
 const read = (path: string) => readFileSync(join(repositoryRoot, path), 'utf8');
 
@@ -26,12 +28,24 @@ describe('MC-07 release boundary', () => {
 
   it('keeps the production host to the bounded static and API surface', () => {
     const serverSource = read('server/production-server.ts');
+    const hostSource = read('server/production-host.ts');
+    const productionHostSource = `${serverSource}\n${hostSource}`;
 
-    expect(serverSource).toContain("'/healthz'");
-    expect(serverSource).toContain('handleMoiraeApiRequest');
-    expect(serverSource).toContain('/^\\/assets\\/[A-Za-z0-9._-]+$/');
-    expect(serverSource).not.toMatch(/serveStatic\([^)]*server/);
-    expect(serverSource).not.toContain('ANANKE_MOIRAE_EXECUTION_TOKEN');
+    expect(productionHostSource).toContain("'/healthz'");
+    expect(productionHostSource).toContain('handleMoiraeApiRequest');
+    expect(productionHostSource).toContain('/^\\/assets\\/[A-Za-z0-9._-]+$/');
+    expect(productionHostSource).not.toMatch(/serveStatic\([^)]*server/);
+    expect(productionHostSource).not.toContain('ANANKE_MOIRAE_EXECUTION_TOKEN');
+  });
+
+  it('blocks development and production access to server-only paths', () => {
+    expect(isHostOnlyPath('/server/document-source.ts')).toBe(true);
+    expect(isHostOnlyPath('/dist-server/fixtures/demo-policy-001.txt')).toBe(true);
+    expect(isHostOnlyPath('/src/server/document-source.ts')).toBe(true);
+    expect(isHostOnlyPath('/src/fixtures/demo-policy-001.txt')).toBe(true);
+    expect(isHostOnlyPath('/publication/demo-policy-001')).toBe(true);
+    expect(isHostOnlyPath('/@fs/D:/Users/fleur/Moirae-Console/server/http-handler.ts')).toBe(true);
+    expect(isHostOnlyPath('/assets/index.js')).toBe(false);
   });
 
   it('keeps the WebMCP discovery boundary free of Fates parameters', () => {

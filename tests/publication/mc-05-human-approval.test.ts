@@ -1,13 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  FatesClient,
-  FatesTransportResponse,
-} from '../../src/fates/client';
+import type { FatesClient, FatesTransportResponse } from '../../src/fates/client';
 import type { GovernanceOutcome, GovernedRequest } from '../../src/fates/types';
-import { calculateMoiraePublicationAuthorityReceiptDigest, calculateMoiraePublicationRequestDigest, MOIRAE_PUBLICATION_AUTHORITY_BINDING, MOIRAE_PUBLICATION_DESTINATION_ID, MOIRAE_PUBLICATION_FATES_EXPECTED_SHA256, MOIRAE_PUBLICATION_FATES_PURPOSE, MOIRAE_PUBLICATION_FATES_ACTION } from '../../server/moirae-publication-authority';
+import {
+  calculateMoiraePublicationAuthorityBindingDigest,
+  calculateMoiraePublicationAuthorityReceiptDigest,
+  calculateMoiraePublicationRequestDigest,
+  MOIRAE_PUBLICATION_AUTHORITY_BINDING,
+  MOIRAE_PUBLICATION_DESTINATION_ID,
+  MOIRAE_PUBLICATION_FATES_EXPECTED_SHA256,
+  MOIRAE_PUBLICATION_FATES_PURPOSE,
+  MOIRAE_PUBLICATION_FATES_ACTION,
+} from '../../server/moirae-publication-authority';
 import { PublishDocumentHttpHandler } from '../../server/http-handler';
-import type { PublicationStore, PublicationStoreInput, PublicationWriteResult } from '../../server/publication-store';
-import type { AnankePublicationApprovalTransport, AnankeApprovalTransition } from '../../server/ananke-publication-transport';
+import type {
+  PublicationStore,
+  PublicationStoreInput,
+  PublicationWriteResult,
+} from '../../server/publication-store';
+import type {
+  AnankePublicationApprovalTransport,
+  AnankeApprovalTransition,
+} from '../../server/ananke-publication-transport';
 
 const request: GovernedRequest = {
   requestId: 'mc05-console-request-001',
@@ -74,7 +87,10 @@ class FakeApprovalTransport implements AnankePublicationApprovalTransport {
 
   public constructor(private readonly finalResponse: FatesTransportResponse) {}
 
-  public async approve(requestValue: GovernedRequest, approvalRequestId: string): Promise<AnankeApprovalTransition> {
+  public async approve(
+    requestValue: GovernedRequest,
+    approvalRequestId: string,
+  ): Promise<AnankeApprovalTransition> {
     this.approvalRequests.push(requestValue);
     return {
       approvalRequestId,
@@ -85,7 +101,10 @@ class FakeApprovalTransport implements AnankePublicationApprovalTransport {
     };
   }
 
-  public async reject(requestValue: GovernedRequest, approvalRequestId: string): Promise<AnankeApprovalTransition> {
+  public async reject(
+    requestValue: GovernedRequest,
+    approvalRequestId: string,
+  ): Promise<AnankeApprovalTransition> {
     this.approvalRequests.push(requestValue);
     return {
       approvalRequestId,
@@ -116,7 +135,10 @@ class FakeApprovalTransport implements AnankePublicationApprovalTransport {
 function allowedResponse(): FatesTransportResponse {
   const issuedAt = new Date(Date.now() - 100).toISOString();
   const expiresAt = new Date(Date.now() + 4_900).toISOString();
-  const authorityBindingDigest = 'b'.repeat(64);
+  const authorityBindingDigest = calculateMoiraePublicationAuthorityBindingDigest({
+    requestId: request.requestId,
+    policyVersion: 'builtin:0.1.0',
+  });
   const canonicalRequestDigest = calculateMoiraePublicationRequestDigest({
     documentId: 'demo-policy-001',
     expectedSha256: MOIRAE_PUBLICATION_FATES_EXPECTED_SHA256,
@@ -161,7 +183,8 @@ function allowedResponse(): FatesTransportResponse {
         replayState: 'CONSUMED_ONCE',
         decisionId: 'mc05-decision-001',
         outcomeId: 'mc05-outcome-001',
-        auditId: 'mc05-audit-001',
+        auditId: 'mc05-outcome-001',
+        auditReference: { auditId: 'mc05-outcome-001', sourceRuntime: 'ananke' },
         policyVersion: 'builtin:0.1.0',
         policyDecision: 'ALLOW',
         authorizationDecision: 'ALLOW',
@@ -184,7 +207,14 @@ function allowedResponse(): FatesTransportResponse {
 
 function handler(transport: FakeApprovalTransport, store: CountingStore) {
   const client: FatesClient = { govern: async () => pendingOutcome };
-  return new PublishDocumentHttpHandler(client, store, transport);
+  return new PublishDocumentHttpHandler(
+    client,
+    store,
+    transport,
+    undefined,
+    undefined,
+    'mc05-test-operator-proof',
+  );
 }
 
 describe('MC-05 Console human approval boundary', () => {
@@ -202,9 +232,13 @@ describe('MC-05 Console human approval boundary', () => {
 
     expect(result).toMatchObject({
       outcome: { status: 'REQUIRES_APPROVAL' },
-      approval: { approvalRequestId: 'mc05-approval-001', state: 'WAITING_FOR_APPROVAL' },
+      approval: { state: 'WAITING_FOR_APPROVAL' },
       publication: { state: 'NOT_PUBLISHED' },
     });
+    expect(result).toMatchObject({
+      approval: { approvalHandle: expect.stringMatching(/^moirae_/) },
+    });
+    expect(JSON.stringify(result)).not.toContain('mc05-approval-001');
     expect(store.calls).toHaveLength(0);
     expect(transport.executeRequests).toHaveLength(0);
   });
@@ -222,8 +256,9 @@ describe('MC-05 Console human approval boundary', () => {
     });
 
     const malformed = await service.decideApproval({
-      approvalRequestId: 'mc05-approval-001',
+      approvalHandle: 'moirae_invalid-handle',
       decision: 'APPROVE',
+      operatorProof: 'mc05-test-operator-proof',
       documentId: 'other-document',
       expiresAt: '2099-01-01T00:00:00.000Z',
     });
@@ -236,16 +271,19 @@ describe('MC-05 Console human approval boundary', () => {
     const store = new CountingStore();
     const transport = new FakeApprovalTransport(allowedResponse());
     const service = handler(transport, store);
-    await service.handle({
+    const pending = await service.handle({
       requestId: request.requestId,
       toolName: request.action,
       arguments: request.parameters,
       caller: request.caller,
       context: request.context,
     });
+    if (!('approval' in pending) || !pending.approval)
+      throw new Error('MC05_PENDING_HANDLE_MISSING');
     const published = await service.decideApproval({
-      approvalRequestId: 'mc05-approval-001',
+      approvalHandle: pending.approval.approvalHandle,
       decision: 'APPROVE',
+      operatorProof: 'mc05-test-operator-proof',
     });
 
     expect(published).toMatchObject({
@@ -257,14 +295,12 @@ describe('MC-05 Console human approval boundary', () => {
     expect(store.calls).toHaveLength(1);
 
     const replay = await service.decideApproval({
-      approvalRequestId: 'mc05-approval-001',
+      approvalHandle: pending.approval.approvalHandle,
       decision: 'APPROVE',
+      operatorProof: 'mc05-test-operator-proof',
     });
-    expect(replay).toMatchObject({
-      approval: { state: 'APPROVED' },
-      publication: { state: 'NOT_PUBLISHED', reasonCode: 'REPLAY_REJECTED' },
-    });
-    expect(transport.executeRequests).toHaveLength(2);
+    expect(replay).toEqual({ error: 'CONFLICT', reasonCode: 'APPROVAL_TERMINAL' });
+    expect(transport.executeRequests).toHaveLength(1);
     expect(store.calls).toHaveLength(1);
   });
 
@@ -272,16 +308,19 @@ describe('MC-05 Console human approval boundary', () => {
     const store = new CountingStore();
     const transport = new FakeApprovalTransport(allowedResponse());
     const service = handler(transport, store);
-    await service.handle({
+    const pending = await service.handle({
       requestId: request.requestId,
       toolName: request.action,
       arguments: request.parameters,
       caller: request.caller,
       context: request.context,
     });
+    if (!('approval' in pending) || !pending.approval)
+      throw new Error('MC05_PENDING_HANDLE_MISSING');
     const rejected = await service.decideApproval({
-      approvalRequestId: 'mc05-approval-001',
+      approvalHandle: pending.approval.approvalHandle,
       decision: 'REJECT',
+      operatorProof: 'mc05-test-operator-proof',
     });
 
     expect(rejected).toMatchObject({

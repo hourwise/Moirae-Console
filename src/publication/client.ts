@@ -56,13 +56,14 @@ export async function requestPublicationDenyDemo(): Promise<PublicationResult> {
 }
 
 export async function decidePublicationApproval(
-  approvalRequestId: string,
+  approvalHandle: string,
   decision: PublicationApprovalDecision,
+  operatorProof: string,
 ): Promise<PublicationResult> {
   const response = await fetch('/api/publish-document/approval', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ approvalRequestId, decision }),
+    body: JSON.stringify({ approvalHandle, decision, operatorProof }),
   });
 
   if (!response.ok) {

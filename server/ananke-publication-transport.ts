@@ -29,7 +29,10 @@ export interface AnankeApprovalTransition {
 export interface AnankePublicationApprovalTransport {
   approve(request: GovernedRequest, approvalRequestId: string): Promise<AnankeApprovalTransition>;
   reject(request: GovernedRequest, approvalRequestId: string): Promise<AnankeApprovalTransition>;
-  executeApproved(request: GovernedRequest, approvalRequestId: string): Promise<FatesTransportResponse>;
+  executeApproved(
+    request: GovernedRequest,
+    approvalRequestId: string,
+  ): Promise<FatesTransportResponse>;
 }
 
 export interface AnankePublicationDenyTransport {
@@ -171,11 +174,13 @@ export class AnankePublicationFatesTransport
           signal: controller.signal,
         },
       );
-      const raw = await response.json().catch(() => undefined);
-      const transition = parseApprovalTransition(raw, approvalRequestId);
-      if (!response.ok && !transition) {
+      if (response.status !== 200) {
+        // A body that resembles an approval transition is never authoritative
+        // when the transport itself reported failure.
         throw new Error(`ANANKE_APPROVAL_HTTP_${response.status}`);
       }
+      const raw = await response.json().catch(() => undefined);
+      const transition = parseApprovalTransition(raw, approvalRequestId);
       if (!transition) {
         throw new Error('ANANKE_APPROVAL_MALFORMED_RESPONSE');
       }
@@ -216,11 +221,17 @@ function approvalEndpoint(
   return `${executeEndpoint.slice(0, -'/execute'.length)}/approvals/${encodeURIComponent(approvalRequestId)}/${decision === 'APPROVE' ? 'approve' : 'reject'}`;
 }
 
-function parseApprovalTransition(value: unknown, approvalRequestId: string): AnankeApprovalTransition | undefined {
+function parseApprovalTransition(
+  value: unknown,
+  approvalRequestId: string,
+): AnankeApprovalTransition | undefined {
   if (!isRecord(value)) return undefined;
   const id = stringValue(value.approvalRequestId);
   const state = stringValue(value.approvalState);
-  if (id !== approvalRequestId || (state !== 'APPROVED' && state !== 'REJECTED' && state !== 'EXPIRED')) {
+  if (
+    id !== approvalRequestId ||
+    (state !== 'APPROVED' && state !== 'REJECTED' && state !== 'EXPIRED')
+  ) {
     return undefined;
   }
   const transition = isRecord(value.transition) ? value.transition : undefined;

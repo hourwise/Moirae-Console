@@ -186,7 +186,7 @@ destination, purpose, authenticated workload, acting principal, original request
 correlation ID, canonical request digest, authority-binding digest, approval identity, issue
 time, and expiry.
 
-The browser receives only the opaque `approvalRequestId` and renders the fixed operation. A
+The browser receives only a host-mapped opaque `approvalHandle` and renders the fixed operation. A
 human decision is sent through the trusted Console host to Ananke's authenticated approval
 endpoint with the distinct host-side `ANANKE_MOIRAE_APPROVER_TOKEN`. The tracked demonstration
 operator is `moirae-demo-operator`, scoped to the publication action; this is not production

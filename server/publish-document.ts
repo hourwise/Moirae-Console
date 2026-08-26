@@ -17,11 +17,13 @@ import {
 import type { PublicationStore } from './publication-store';
 import {
   calculateMoiraePublicationAuthorityReceiptDigest,
+  calculateMoiraePublicationAuthorityBindingDigest,
   calculateMoiraePublicationRequestDigest,
   MOIRAE_PUBLICATION_AUTHORITY_BINDING,
   MOIRAE_PUBLICATION_FATES_ACTION,
   MOIRAE_PUBLICATION_FATES_EXPECTED_SHA256,
   MOIRAE_PUBLICATION_FATES_PURPOSE,
+  MOIRAE_PUBLICATION_POLICY_VERSION,
   MOIRAE_PUBLICATION_MAX_LIFETIME_MS,
   MOIRAE_PUBLICATION_DESTINATION_ID,
 } from './moirae-publication-authority';
@@ -92,11 +94,13 @@ export class PublishDocumentService {
     const allowedPhases: PublicationLifecyclePhase[] = [
       ...phases,
       ...(outcome.status === 'REQUIRES_APPROVAL'
-        ? [{
-            name: 'APPROVAL REQUIRED' as const,
-            source: 'fates-authoritative' as const,
-            evidenceId: outcome.evidence.evidenceId,
-          }]
+        ? [
+            {
+              name: 'APPROVAL REQUIRED' as const,
+              source: 'fates-authoritative' as const,
+              evidenceId: outcome.evidence.evidenceId,
+            },
+          ]
         : []),
       {
         name: 'ALLOWED',
@@ -210,6 +214,13 @@ function mayPublish(
         expectedSha256: MOIRAE_PUBLICATION_FATES_EXPECTED_SHA256,
         destinationId: MOIRAE_PUBLICATION_DESTINATION_ID,
       }) &&
+    evidence.fatesRequestId === request.requestId &&
+    evidence.policyVersion === MOIRAE_PUBLICATION_POLICY_VERSION &&
+    evidence.authorityBindingDigest ===
+      calculateMoiraePublicationAuthorityBindingDigest({
+        requestId: request.requestId,
+        policyVersion: MOIRAE_PUBLICATION_POLICY_VERSION,
+      }) &&
     isSha256(evidence.authorityBindingDigest) &&
     isSha256(evidence.authorityReceiptDigest) &&
     isCanonicalTimestampWithinLifetime(evidence.issuedAt, evidence.expiresAt, nowMs) &&
@@ -221,6 +232,8 @@ function mayPublish(
     nonEmptyString(evidence.decisionId) &&
     nonEmptyString(evidence.outcomeId) &&
     nonEmptyString(evidence.auditId) &&
+    evidence.auditReference?.auditId === evidence.auditId &&
+    evidence.auditReference.sourceRuntime === 'ananke' &&
     evidence.outcomeState === 'COMPLETED' &&
     evidence.policyDecision === 'ALLOW' &&
     evidence.effectSemantics === 'AUTHORIZATION_ONLY_NO_PUBLICATION' &&
@@ -230,15 +243,22 @@ function mayPublish(
     isAuthenticatedPublicationWorkload(evidence.authenticatedWorkloadIdentity) &&
     evidence.authorityReceiptDigest ===
       calculateMoiraePublicationAuthorityReceiptDigest({
-        documentId: evidence.documentId as string,
-        expectedSha256: evidence.expectedSha256 as string,
-        destinationId: evidence.destinationId as string,
-        purpose: evidence.purpose as string,
-        fatesRequestId: evidence.fatesRequestId as string,
-        correlationId: evidence.correlationId as string,
-        canonicalRequestDigest: evidence.canonicalRequestDigest as string,
-        authorityBindingDigest: evidence.authorityBindingDigest as string,
-        policyVersion: evidence.policyVersion as string,
+        documentId: MOIRAE_PUBLICATION_AUTHORITY_BINDING.documentId,
+        expectedSha256: MOIRAE_PUBLICATION_AUTHORITY_BINDING.expectedSha256,
+        destinationId: MOIRAE_PUBLICATION_AUTHORITY_BINDING.destinationId,
+        purpose: MOIRAE_PUBLICATION_AUTHORITY_BINDING.purpose,
+        fatesRequestId: request.requestId,
+        correlationId: request.requestId,
+        canonicalRequestDigest: calculateMoiraePublicationRequestDigest({
+          documentId: MOIRAE_PUBLICATION_AUTHORITY_BINDING.documentId,
+          expectedSha256: MOIRAE_PUBLICATION_AUTHORITY_BINDING.expectedSha256,
+          destinationId: MOIRAE_PUBLICATION_AUTHORITY_BINDING.destinationId,
+        }),
+        authorityBindingDigest: calculateMoiraePublicationAuthorityBindingDigest({
+          requestId: request.requestId,
+          policyVersion: MOIRAE_PUBLICATION_POLICY_VERSION,
+        }),
+        policyVersion: MOIRAE_PUBLICATION_POLICY_VERSION,
         decisionId: evidence.decisionId as string,
         outcomeId: evidence.outcomeId as string,
         issuedAt: evidence.issuedAt as string,

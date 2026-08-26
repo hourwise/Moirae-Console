@@ -1,3 +1,5 @@
+import { randomUUID, timingSafeEqual } from 'node:crypto';
+
 import {
   createFatesClient,
   failedOutcome,
@@ -28,6 +30,8 @@ import { governInspectDocumentInvocation, InspectDocumentService } from './inspe
 import { governPublishDocumentInvocation, PublishDocumentService } from './publish-document';
 import { FixedDemoDocumentSource, type HostDocumentSource } from './document-source';
 import { FixedFilePublicationStore, type PublicationStore } from './publication-store';
+
+export const MOIRAE_OPERATOR_STEP_UP_SECRET_ENV = 'MOIRAE_OPERATOR_STEP_UP_SECRET';
 
 export type InspectDocumentHttpResult = InspectionResult | InvalidInspectionRequest;
 export type PublishDocumentHttpResult = PublicationResult | InvalidPublicationRequest;
@@ -61,6 +65,7 @@ export class PublishDocumentHttpHandler {
   private readonly publicationStore: PublicationStore;
   private readonly approvalTransport?: AnankePublicationApprovalTransport;
   private readonly restrictedTransport?: AnankePublicationDenyTransport;
+  private readonly operatorStepUpSecret?: string;
   private readonly sourceReadCount: { value: number } = { value: 0 };
   private readonly pendingApprovals = new Map<string, PendingPublicationApproval>();
 
@@ -70,6 +75,7 @@ export class PublishDocumentHttpHandler {
     approvalTransport?: AnankePublicationApprovalTransport,
     restrictedTransport?: AnankePublicationDenyTransport,
     documentSource?: HostDocumentSource,
+    operatorStepUpSecret?: string,
   ) {
     const defaultTransport = createAnankePublicationFatesTransportFromEnvironment();
     this.client =
@@ -80,6 +86,9 @@ export class PublishDocumentHttpHandler {
     this.publicationStore = publicationStore ?? new FixedFilePublicationStore();
     this.approvalTransport = approvalTransport ?? defaultTransport;
     this.restrictedTransport = restrictedTransport ?? defaultTransport;
+    this.operatorStepUpSecret =
+      (operatorStepUpSecret ?? process.env[MOIRAE_OPERATOR_STEP_UP_SECRET_ENV])?.trim() ||
+      undefined;
     const source = documentSource ?? new FixedDemoDocumentSource();
     this.service = new PublishDocumentService({
       mode: 'production',
@@ -105,10 +114,9 @@ export class PublishDocumentHttpHandler {
     const governed = await governPublishDocumentInvocation(this.client, invocation);
     const result = await this.service.publish(governed.request, governed.outcome);
     if (governed.outcome.status === 'REQUIRES_APPROVAL') {
-      const approvalRequestId = governed.outcome.approvalBinding.bindingId;
-      this.rememberPendingApproval(approvalRequestId, governed.request, governed.outcome);
-      return withApproval(result, {
-        approvalRequestId,
+      const pending = this.rememberPendingApproval(governed.request, governed.outcome);
+      return withApproval(redactApprovalIdentifiers(result, pending.approvalHandle), {
+        approvalHandle: pending.approvalHandle,
         state: 'WAITING_FOR_APPROVAL',
         expiresAt: governed.outcome.evidence.expiresAt,
       });
@@ -151,22 +159,47 @@ export class PublishDocumentHttpHandler {
       return { error: 'BAD_REQUEST', reasonCode: 'INVALID_APPROVAL_DECISION' };
     }
 
+    if (!this.operatorStepUpSecret) {
+      return { error: 'FORBIDDEN', reasonCode: 'OPERATOR_STEP_UP_UNAVAILABLE' };
+    }
+    if (!constantTimeSecretEquals(decision.operatorProof, this.operatorStepUpSecret)) {
+      return { error: 'FORBIDDEN', reasonCode: 'INVALID_OPERATOR_STEP_UP' };
+    }
+
     this.cleanupPendingApprovals();
-    const pending = this.pendingApprovals.get(decision.approvalRequestId);
+    const pending = this.pendingApprovals.get(decision.approvalHandle);
     if (!pending) {
       return { error: 'BAD_REQUEST', reasonCode: 'APPROVAL_NOT_FOUND_OR_EXPIRED' };
     }
+    if (pending.state !== 'WAITING') {
+      return {
+        error: 'CONFLICT',
+        reasonCode:
+          pending.state === 'DECIDING' ? 'APPROVAL_DECISION_IN_PROGRESS' : 'APPROVAL_TERMINAL',
+      };
+    }
     if (!this.approvalTransport) {
+      pending.state = 'FAILED_CLOSED';
       return this.failClosedApproval(pending, 'APPROVAL_TRANSPORT_UNAVAILABLE');
     }
+
+    // This synchronous state claim is the host-side CAS boundary. No second
+    // browser request can enter a privileged approval call after this point.
+    pending.state = 'DECIDING';
 
     try {
       const transition =
         decision.decision === 'APPROVE'
-          ? await this.approvalTransport.approve(pending.request, decision.approvalRequestId)
-          : await this.approvalTransport.reject(pending.request, decision.approvalRequestId);
+          ? await this.approvalTransport.approve(pending.request, pending.fatesApprovalRequestId)
+          : await this.approvalTransport.reject(pending.request, pending.fatesApprovalRequestId);
+
+      if (transition.approvalRequestId !== pending.fatesApprovalRequestId) {
+        pending.state = 'FAILED_CLOSED';
+        return this.failClosedApproval(pending, 'APPROVAL_BINDING_MISMATCH');
+      }
 
       if (decision.decision === 'REJECT' && transition.approvalState !== 'REJECTED') {
+        pending.state = 'FAILED_CLOSED';
         return this.failClosedApproval(pending, 'APPROVAL_STATE_MISMATCH');
       }
 
@@ -174,14 +207,15 @@ export class PublishDocumentHttpHandler {
         const terminalTransition = transition as AnankeApprovalTransition & {
           approvalState: 'REJECTED' | 'EXPIRED';
         };
+        pending.state = transition.approvalState;
         const outcome = terminalApprovalOutcome(
           pending.outcome,
           terminalTransition,
           decision.decision,
         );
         const result = await this.service.publish(pending.request, outcome);
-        return withApproval(result, {
-          approvalRequestId: transition.approvalRequestId,
+        return withApproval(redactApprovalIdentifiers(result, pending.approvalHandle), {
+          approvalHandle: pending.approvalHandle,
           state: transition.approvalState,
           expiresAt: pending.outcome.evidence.expiresAt,
           ...(transition.decisionId ? { decisionId: transition.decisionId } : {}),
@@ -190,14 +224,15 @@ export class PublishDocumentHttpHandler {
         });
       }
 
+      pending.state = 'APPROVED';
       const governed = await this.approvalTransport.executeApproved(
         pending.request,
-        decision.approvalRequestId,
+        pending.fatesApprovalRequestId,
       );
       const outcome = parseFatesOutcome(governed, pending.request.requestId);
       const result = await this.service.publish(pending.request, outcome);
-      return withApproval(result, {
-        approvalRequestId: transition.approvalRequestId,
+      return withApproval(redactApprovalIdentifiers(result, pending.approvalHandle), {
+        approvalHandle: pending.approvalHandle,
         state: 'APPROVED',
         expiresAt: pending.outcome.evidence.expiresAt,
         ...(transition.decisionId ? { decisionId: transition.decisionId } : {}),
@@ -212,7 +247,9 @@ export class PublishDocumentHttpHandler {
     }
   }
 
-  public async status(): Promise<Awaited<ReturnType<PublicationStore['status']>> & { sourceReadCount: number }> {
+  public async status(): Promise<
+    Awaited<ReturnType<PublicationStore['status']>> & { sourceReadCount: number }
+  > {
     return {
       ...(await this.publicationStore.status()),
       sourceReadCount: this.sourceReadCount.value,
@@ -220,10 +257,9 @@ export class PublishDocumentHttpHandler {
   }
 
   private rememberPendingApproval(
-    approvalRequestId: string,
     request: GovernedRequest,
     outcome: ApprovalRequiredOutcome,
-  ): void {
+  ): PendingPublicationApproval {
     this.cleanupPendingApprovals();
     if (this.pendingApprovals.size >= 1_024) {
       const oldest = this.pendingApprovals.keys().next().value;
@@ -232,7 +268,16 @@ export class PublishDocumentHttpHandler {
     const expiresAt = Date.parse(outcome.evidence.expiresAt ?? '');
     const retainedUntil =
       (Number.isFinite(expiresAt) ? expiresAt : Date.now()) + APPROVAL_RECORD_RETENTION_MS;
-    this.pendingApprovals.set(approvalRequestId, { request, outcome, retainedUntil });
+    const pending: PendingPublicationApproval = {
+      request,
+      outcome,
+      fatesApprovalRequestId: outcome.approvalBinding.bindingId,
+      approvalHandle: `moirae_${randomUUID()}`,
+      retainedUntil,
+      state: 'WAITING',
+    };
+    this.pendingApprovals.set(pending.approvalHandle, pending);
+    return pending;
   }
 
   private cleanupPendingApprovals(): void {
@@ -246,6 +291,7 @@ export class PublishDocumentHttpHandler {
     pending: PendingPublicationApproval,
     reasonCode: string,
   ): PublicationResult {
+    pending.state = 'FAILED_CLOSED';
     const outcome = failedOutcome(pending.request.requestId, new Error(reasonCode));
     return this.service.publish(pending.request, outcome) as unknown as PublicationResult;
   }
@@ -266,6 +312,8 @@ export function createProductionPublishDocumentHttpHandler(
     store,
     transport,
     transport,
+    undefined,
+    env[MOIRAE_OPERATOR_STEP_UP_SECRET_ENV],
   );
 }
 
@@ -289,14 +337,18 @@ function createProductionFatesClient(
 interface PendingPublicationApproval {
   readonly request: GovernedRequest;
   readonly outcome: ApprovalRequiredOutcome;
+  readonly fatesApprovalRequestId: string;
+  readonly approvalHandle: string;
   readonly retainedUntil: number;
+  state: 'WAITING' | 'DECIDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FAILED_CLOSED';
 }
 
 const APPROVAL_RECORD_RETENTION_MS = 5 * 60 * 1_000;
 
 interface ApprovalDecisionRequest {
-  readonly approvalRequestId: string;
+  readonly approvalHandle: string;
   readonly decision: 'APPROVE' | 'REJECT';
+  readonly operatorProof: string;
 }
 
 function restrictedDenyRequest(): GovernedRequest {
@@ -319,17 +371,21 @@ function restrictedDenyRequest(): GovernedRequest {
 function parseApprovalDecision(value: unknown): ApprovalDecisionRequest | undefined {
   if (!isRecord(value)) return undefined;
   const keys = Object.keys(value).sort();
-  if (keys.join(',') !== 'approvalRequestId,decision') return undefined;
+  if (keys.join(',') !== 'approvalHandle,decision,operatorProof') return undefined;
   if (
-    typeof value.approvalRequestId !== 'string' ||
-    !/^[A-Za-z0-9_-]{1,128}$/.test(value.approvalRequestId) ||
-    (value.decision !== 'APPROVE' && value.decision !== 'REJECT')
+    typeof value.approvalHandle !== 'string' ||
+    !/^moirae_[A-Za-z0-9_-]{36}$/.test(value.approvalHandle) ||
+    (value.decision !== 'APPROVE' && value.decision !== 'REJECT') ||
+    typeof value.operatorProof !== 'string' ||
+    value.operatorProof.length < 1 ||
+    value.operatorProof.length > 256
   ) {
     return undefined;
   }
   return {
-    approvalRequestId: value.approvalRequestId,
+    approvalHandle: value.approvalHandle,
     decision: value.decision,
+    operatorProof: value.operatorProof,
   };
 }
 
@@ -384,6 +440,33 @@ function withApproval(
     });
   }
   return { ...result, phases, approval };
+}
+
+function redactApprovalIdentifiers(
+  result: PublicationResult,
+  approvalHandle: string,
+): PublicationResult {
+  const safeEvidence = { ...result.outcome.evidence };
+  delete safeEvidence.approvalRequestId;
+  const outcome =
+    result.outcome.status === 'REQUIRES_APPROVAL'
+      ? {
+          ...result.outcome,
+          evidence: safeEvidence,
+          approvalBinding: {
+            ...result.outcome.approvalBinding,
+            bindingId: approvalHandle,
+          },
+        }
+      : { ...result.outcome, evidence: safeEvidence };
+  return { ...result, outcome };
+}
+
+function constantTimeSecretEquals(candidate: string, expected: string): boolean {
+  const candidateBytes = Buffer.from(candidate, 'utf8');
+  const expectedBytes = Buffer.from(expected, 'utf8');
+  if (candidateBytes.byteLength !== expectedBytes.byteLength) return false;
+  return timingSafeEqual(candidateBytes, expectedBytes);
 }
 
 function parseInvocation(payload: unknown): WebMcpInvocation | undefined {

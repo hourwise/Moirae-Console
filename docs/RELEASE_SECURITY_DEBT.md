@@ -62,6 +62,24 @@ MC-06 denial-specific limitations:
 - no deployed TLS/service identity, durable policy state, operational monitoring, or production
   operator/authentication boundary exists yet.
 
+MC-09 approval-boundary remediation limitations:
+
+- `MOIRAE_OPERATOR_STEP_UP_SECRET` is a distinct host-side demonstration proof. It is not
+  production operator authentication, SSO, or phishing-resistant step-up authentication;
+- the canonical Fates approval identifier remains in a process-local host map and is represented
+  to the browser only by a short-lived opaque Console handle; restart loses pending/tombstone
+  state;
+- approval transport now requires HTTP 200 before parsing a transition, but Fates authority
+  receipts remain `AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`, not cryptographically signed;
+- the configured `MOIRAE_ALLOWED_ORIGIN`, TLS, reverse-proxy policy, durable approval state,
+  service identity, and operational monitoring remain deployment work;
+- Vite development CORS is disabled for this boundary, but same-origin XSS and a compromised
+  operator browser remain outside the bounded claim;
+- no Console license remediation was necessary in this slice: the frozen root `LICENSE` already
+  contains the complete Apache-2.0 text. Ananke's separate public-license/provenance gap remains
+  an independent release blocker until its required source/dependency graph is made public and
+  reproducible under compatible terms.
+
 MC-07 release-candidate limitations:
 
 - the Console production host is now a Node boundary for release preparation, but it is not

@@ -28,7 +28,8 @@ export interface PublicationResult {
   readonly outcome: GovernanceOutcome;
   readonly phases: readonly PublicationLifecyclePhase[];
   readonly approval?: {
-    readonly approvalRequestId: string;
+    /** Opaque Console presentation handle; never the canonical Fates approval ID. */
+    readonly approvalHandle: string;
     readonly state: 'WAITING_FOR_APPROVAL' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
     readonly expiresAt?: string;
     readonly decisionId?: string;
@@ -46,7 +47,7 @@ export interface PublicationResult {
 }
 
 export interface InvalidPublicationRequest {
-  readonly error: 'BAD_REQUEST';
+  readonly error: 'BAD_REQUEST' | 'CONFLICT' | 'FORBIDDEN' | 'UNSUPPORTED_MEDIA_TYPE';
   readonly reasonCode: string;
 }
 

@@ -8,10 +8,20 @@ import {
   createProductionInspectDocumentHttpHandler,
   createProductionPublishDocumentHttpHandler,
 } from './server/http-handler';
-import { decodePathname, handleMoiraeApiRequest, isHostOnlyPath } from './server/http-boundary';
+import {
+  decodePathname,
+  handleMoiraeApiRequest,
+  isHostOnlyPath,
+  type MoiraeHttpBoundarySecurity,
+} from './server/http-boundary';
 
 export default defineConfig({
   plugins: [react(), governedInspectDocumentPlugin()],
+  server: {
+    // The development server must not add permissive CORS headers to the
+    // governed same-origin API. Cross-origin callers receive no API response.
+    cors: false,
+  },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
@@ -27,6 +37,11 @@ export default defineConfig({
 function governedInspectDocumentPlugin(): Plugin {
   const handler = createProductionInspectDocumentHttpHandler();
   const publicationHandler = createProductionPublishDocumentHttpHandler();
+  const security: MoiraeHttpBoundarySecurity = {
+    trustedOrigin: process.env.MOIRAE_ALLOWED_ORIGIN,
+    requireTrustedOrigin: true,
+    allowHostDerivedOrigin: true,
+  };
 
   return {
     name: 'moirae-governed-inspect-document',
@@ -42,10 +57,15 @@ function governedInspectDocumentPlugin(): Plugin {
       });
 
       server.middlewares.use((request, response, next) => {
-        void handleMoiraeApiRequest(request, response, {
-          inspectHandler: handler,
-          publicationHandler,
-        })
+        void handleMoiraeApiRequest(
+          request,
+          response,
+          {
+            inspectHandler: handler,
+            publicationHandler,
+          },
+          security,
+        )
           .then((handled) => {
             if (!handled) next();
           })

@@ -170,13 +170,16 @@ describe('MC-06 Console authoritative denial boundary', () => {
       store,
       undefined,
       deniedTransport([]),
+      undefined,
+      'mc06-test-operator-proof',
     );
 
     const denied = await handler.denyDemo();
     if ('error' in denied) throw new Error(denied.reasonCode);
     const attemptedUpgrade = await handler.decideApproval({
-      approvalRequestId: denied.outcome.evidence.outcomeId,
+      approvalHandle: `moirae_${crypto.randomUUID()}`,
       decision: 'APPROVE',
+      operatorProof: 'mc06-test-operator-proof',
     });
 
     expect(attemptedUpgrade).toEqual({

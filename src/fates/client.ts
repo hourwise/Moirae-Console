@@ -255,6 +255,13 @@ function parseAnankeEvidence(
   const canonicalRequestDigest = stringValue(value.canonicalRequestDigest);
   const authorityBindingDigest = stringValue(value.authorityBindingDigest);
   const authenticatedWorkloadIdentity = stringRecord(value.authenticatedWorkloadIdentity);
+  const auditReference = isRecord(value.auditReference)
+    ? (() => {
+        const auditId = stringValue(value.auditReference.auditId);
+        const sourceRuntime = stringValue(value.auditReference.sourceRuntime);
+        return auditId && sourceRuntime ? { auditId, sourceRuntime } : undefined;
+      })()
+    : undefined;
   const provenance: Record<string, string> = { runtime: 'ananke' };
   for (const key of ['routeState', 'dispatchState', 'policyVersion']) {
     const item = stringValue(value[key]);
@@ -284,6 +291,7 @@ function parseAnankeEvidence(
     decisionId,
     outcomeId,
     auditId: stringValue(value.auditId),
+    ...(auditReference ? { auditReference } : {}),
     outcomeState,
     policyDecision: stringValue(value.policyDecision),
     policyReasonCode: stringValue(value.policyReasonCode),

@@ -55,6 +55,7 @@ export interface GovernanceEvidence {
   readonly decisionId?: string;
   readonly outcomeId?: string;
   readonly auditId?: string;
+  readonly auditReference?: Readonly<{ readonly auditId: string; readonly sourceRuntime: string }>;
   readonly outcomeState?: string;
   readonly policyDecision?: string;
   readonly policyReasonCode?: string;

@@ -12,6 +12,7 @@ import {
 } from '../../server/ananke-publication-transport';
 import {
   calculateMoiraePublicationAuthorityReceiptDigest,
+  calculateMoiraePublicationAuthorityBindingDigest,
   calculateMoiraePublicationRequestDigest,
   MOIRAE_PUBLICATION_AUTHORITY_BINDING,
   MOIRAE_PUBLICATION_DESTINATION_ID,
@@ -97,24 +98,31 @@ function authoritativeOutcome(
     expectedSha256: MOIRAE_PUBLICATION_FATES_EXPECTED_SHA256,
     destinationId: MOIRAE_PUBLICATION_DESTINATION_ID,
     purpose: MOIRAE_PUBLICATION_FATES_PURPOSE,
-    fatesRequestId: 'ananke-publication-request-001',
+    fatesRequestId: requestId,
     correlationId: requestId,
     canonicalRequestDigest: calculateMoiraePublicationRequestDigest({
       documentId: 'demo-policy-001',
       expectedSha256: MOIRAE_PUBLICATION_FATES_EXPECTED_SHA256,
       destinationId: MOIRAE_PUBLICATION_DESTINATION_ID,
     }),
-    authorityBindingDigest: 'b'.repeat(64),
+    authorityBindingDigest: calculateMoiraePublicationAuthorityBindingDigest({
+      requestId,
+      policyVersion: 'builtin:0.1.0',
+    }),
     authorityReceiptDigest: '',
     issuedAt,
     expiresAt,
     receiptId: 'publication-receipt-001',
     nonce: 'publication-nonce-001',
-    replayKeyDigest: 'b'.repeat(64),
+    replayKeyDigest: calculateMoiraePublicationAuthorityBindingDigest({
+      requestId,
+      policyVersion: 'builtin:0.1.0',
+    }),
     replayState: 'CONSUMED_ONCE',
     decisionId: 'publication-decision-001',
     outcomeId: 'publication-outcome-001',
-    auditId: 'publication-audit-001',
+    auditId: 'publication-outcome-001',
+    auditReference: { auditId: 'publication-outcome-001', sourceRuntime: 'ananke' },
     outcomeState: 'COMPLETED',
     policyVersion: 'builtin:0.1.0',
     policyDecision: 'ALLOW',
@@ -520,6 +528,29 @@ describe('MC-04 governed publication', () => {
         authority: 'synthetic',
       },
     });
+    expect(result.publication.state).toBe('NOT_PUBLISHED');
+    expect(store.calls).toHaveLength(0);
+  });
+
+  it.each([
+    ['action', { canonicalAction: 'fates.other.action.v1' }],
+    ['documentId', { documentId: 'other-document' }],
+    ['expectedSha256', { expectedSha256: '0'.repeat(64) }],
+    ['destinationId', { destinationId: 'other-destination' }],
+    ['purpose', { purpose: 'other-purpose' }],
+    ['fatesRequestId', { fatesRequestId: 'other-request' }],
+    ['correlationId', { correlationId: 'other-correlation' }],
+    ['canonicalRequestDigest', { canonicalRequestDigest: '0'.repeat(64) }],
+    ['authorityBindingDigest', { authorityBindingDigest: '0'.repeat(64) }],
+    ['decisionId', { decisionId: 'other-decision' }],
+    ['outcomeId', { outcomeId: 'other-outcome' }],
+    ['auditId', { auditId: 'other-audit' }],
+  ])('MC-09 F-04 authoritative %s substitution fails closed', async (_field, patch) => {
+    const store = new CountingPublicationStore();
+    const result = await service({ publicationStore: store }).publish(
+      request,
+      authoritativeOutcome(request.requestId, patch),
+    );
     expect(result.publication.state).toBe('NOT_PUBLISHED');
     expect(store.calls).toHaveLength(0);
   });

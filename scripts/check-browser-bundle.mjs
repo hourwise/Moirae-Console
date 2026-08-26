@@ -16,6 +16,7 @@ const forbidden = [
   { label: 'publication credential name', pattern: 'ANANKE_MOIRAE_PUBLISH_TOKEN' },
   { label: 'approver credential name', pattern: 'ANANKE_MOIRAE_APPROVER_TOKEN' },
   { label: 'restricted credential name', pattern: 'ANANKE_MOIRAE_RESTRICTED_TOKEN' },
+  { label: 'operator step-up secret name', pattern: 'MOIRAE_OPERATOR_STEP_UP_SECRET' },
   { label: 'server-only source marker', pattern: 'FixedDemoDocumentSource' },
   { label: 'Node filesystem import', pattern: 'node:fs' },
 ];

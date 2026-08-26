@@ -171,7 +171,7 @@ surface. The flow is:
 WebMCP publish_document
   → immutable Console request snapshot
   → authenticated Ananke POST /api/execute
-  → Fates REQUIRES_APPROVAL + opaque approvalRequestId
+  → Fates REQUIRES_APPROVAL + host-mapped opaque approval handle
   → Console approval card (presentation only)
   → trusted host approval transition in Fates
   → same request + approvalId → fresh one-use authority

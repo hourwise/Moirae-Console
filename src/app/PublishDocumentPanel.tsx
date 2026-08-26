@@ -26,6 +26,7 @@ type PanelState =
 export function PublishDocumentPanel() {
   const [state, setState] = useState<PanelState>({ status: 'IDLE' });
   const [approvalBusy, setApprovalBusy] = useState(false);
+  const [operatorProof, setOperatorProof] = useState('');
 
   useEffect(() => {
     void requestPublicationStatus()
@@ -70,16 +71,17 @@ export function PublishDocumentPanel() {
     }
   }
 
-  async function decideApproval(decision: 'APPROVE' | 'REJECT') {
+  async function decideApproval(decision: 'APPROVE' | 'REJECT', proof: string) {
     if (state.status !== 'RESULT' || state.result.approval?.state !== 'WAITING_FOR_APPROVAL') {
       return;
     }
-    const approvalRequestId = state.result.approval.approvalRequestId;
+    const approvalHandle = state.result.approval.approvalHandle;
     setApprovalBusy(true);
     try {
-      const result = await decidePublicationApproval(approvalRequestId, decision);
+      const result = await decidePublicationApproval(approvalHandle, decision, proof);
       const snapshot = await requestPublicationStatus().catch(() => undefined);
       setState({ status: 'RESULT', result, ...(snapshot ? { snapshot } : {}) });
+      setOperatorProof('');
     } catch (error) {
       setState({
         ...state,
@@ -165,6 +167,8 @@ export function PublishDocumentPanel() {
         <PublicationResultView
           result={result}
           approvalBusy={approvalBusy}
+          operatorProof={operatorProof}
+          onOperatorProofChange={setOperatorProof}
           onApprovalDecision={decideApproval}
         />
       )}
@@ -175,11 +179,15 @@ export function PublishDocumentPanel() {
 function PublicationResultView({
   result,
   approvalBusy,
+  operatorProof,
+  onOperatorProofChange,
   onApprovalDecision,
 }: {
   readonly result: PublicationResult;
   readonly approvalBusy: boolean;
-  readonly onApprovalDecision: (decision: 'APPROVE' | 'REJECT') => void;
+  readonly operatorProof: string;
+  readonly onOperatorProofChange: (value: string) => void;
+  readonly onApprovalDecision: (decision: 'APPROVE' | 'REJECT', proof: string) => void;
 }) {
   return (
     <div className="inspection-result">
@@ -197,7 +205,11 @@ function PublicationResultView({
           <dd>{result.outcome.status}</dd>
         </div>
         <div>
-          <dt>Agent</dt>
+          <dt>Proposal / agent label</dt>
+          <dd>{result.request.caller.id}</dd>
+        </div>
+        <div>
+          <dt>Fates authenticated principal</dt>
           <dd>{result.outcome.evidence.authenticatedWorkloadIdentity?.actingPrincipalId ?? '—'}</dd>
         </div>
         <div>
@@ -299,17 +311,28 @@ function PublicationResultView({
             </div>
           </dl>
           <div className="approval-actions">
+            <label className="operator-proof-field">
+              Operator step-up proof
+              <input
+                type="password"
+                autoComplete="off"
+                value={operatorProof}
+                onChange={(event) => onOperatorProofChange(event.target.value)}
+                placeholder="Required for this approval"
+                aria-label="Operator step-up proof"
+              />
+            </label>
             <button
               type="button"
-              onClick={() => onApprovalDecision('APPROVE')}
-              disabled={approvalBusy}
+              onClick={() => onApprovalDecision('APPROVE', operatorProof)}
+              disabled={approvalBusy || operatorProof.length === 0}
             >
               {approvalBusy ? 'Submitting…' : 'Approve'}
             </button>
             <button
               type="button"
-              onClick={() => onApprovalDecision('REJECT')}
-              disabled={approvalBusy}
+              onClick={() => onApprovalDecision('REJECT', operatorProof)}
+              disabled={approvalBusy || operatorProof.length === 0}
             >
               Reject
             </button>
@@ -331,10 +354,6 @@ function PublicationResultView({
               <dd>
                 {result.outcome.evidence.policyReason ?? result.outcome.reasonCode ?? 'DENIED'}
               </dd>
-            </div>
-            <div>
-              <dt>Approval request</dt>
-              <dd>{result.outcome.evidence.approvalRequestId ?? 'none'}</dd>
             </div>
             <div>
               <dt>Host effect</dt>
