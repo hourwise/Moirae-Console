@@ -7,6 +7,8 @@ export type PublicationLifecyclePhaseName =
   | 'APPROVAL REQUIRED'
   | 'APPROVED'
   | 'ALLOWED'
+  | 'DENIED'
+  | 'NOT EXECUTED'
   | 'HOST EXECUTION'
   | 'PUBLISHED'
   | 'REJECTED'
@@ -55,4 +57,5 @@ export interface PublicationStatusSnapshot {
   readonly sha256?: string;
   readonly publishedAt?: string;
   readonly executorInvocationCount: number;
+  readonly sourceReadCount: number;
 }

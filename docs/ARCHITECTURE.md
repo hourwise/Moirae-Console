@@ -191,3 +191,37 @@ issues the existing short-lived one-use authority; Fates still performs no docum
 publication. The authority is `AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`, not a signed receipt.
 Operator authentication, durable pending/replay persistence, TLS/service identity, and the
 Vite host remain demonstration limitations.
+
+## MC-06 authoritative denial
+
+MC-06 uses the same canonical publication operation with a separate, host-only restricted
+workload profile:
+
+```text
+fixed Console deny-demo request
+          │  no caller/action/digest/purpose/destination input
+          ▼
+host injects restricted workload credential
+          ▼
+authenticated Ananke POST /api/execute
+          │  fates.moirae.publish-document.v1
+          ▼
+exact-scope Ananke authority-deny rule
+          │  restricted profile has read scope, not publish scope
+          ▼
+authoritative DENY
+          ▼
+no approval request · no execution authority · no source read · no publication
+```
+
+The restricted identity is `moirae-restricted-agent` acting through the host profile
+`moirae-restricted-host`. The rule binds the exact fixed document, approved digest, fixed
+destination, publication purpose, authenticated principals, bounded scope, and canonical
+request digest. It is evaluated after authentication and before request validation, approval,
+or execution. The normal publication profile and MC-05 approval path are unchanged.
+
+The deny-demo endpoint is a presentation/test orchestration route, not a WebMCP capability and
+not an authorization mechanism. It accepts only an empty JSON object; the browser cannot choose
+the restricted credential or assert a caller identity. The UI derives `DENIED` and `NOT EXECUTED`
+from the returned authoritative evidence. No Console policy engine or local denial receipt is
+created.

@@ -89,6 +89,27 @@ function governedInspectDocumentPlugin(): Plugin {
           );
       });
 
+      server.middlewares.use('/api/publish-document/deny-demo', (request, response) => {
+        if (request.method !== 'POST') {
+          response.statusCode = 405;
+          response.setHeader('Allow', 'POST');
+          response.end();
+          return;
+        }
+
+        void readJsonBody(request)
+          .then((payload) => {
+            if (!isEmptyObject(payload)) {
+              throw new Error('INVALID_DENY_DEMO_REQUEST');
+            }
+            return publicationHandler.denyDemo();
+          })
+          .then((result) => sendJson(response, result))
+          .catch(() =>
+            sendJson(response, { error: 'BAD_REQUEST', reasonCode: 'INVALID_DENY_DEMO_REQUEST' }, 400),
+          );
+      });
+
       server.middlewares.use('/api/publish-document', (request, response) => {
         if (request.method !== 'POST') {
           response.statusCode = 405;
@@ -156,4 +177,13 @@ function sendJson(response: ServerResponse, payload: unknown, statusCode = 200):
   response.setHeader('Content-Type', 'application/json; charset=utf-8');
   setNoStoreResponseHeaders(response);
   response.end(JSON.stringify(payload));
+}
+
+function isEmptyObject(value: unknown): value is Record<string, never> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 0
+  );
 }

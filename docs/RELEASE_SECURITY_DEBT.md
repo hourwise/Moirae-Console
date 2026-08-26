@@ -49,3 +49,15 @@ MC-05 approval-specific limitations:
   `AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`;
 - production host/service identity, TLS, durable recovery, monitoring, and browser automation
   remain deployment/release work.
+
+MC-06 denial-specific limitations:
+
+- `ANANKE_MOIRAE_RESTRICTED_TOKEN` is a fixed host-side demonstration credential for
+  `moirae-restricted-agent`; it is not production workload identity assurance;
+- the restricted-agent scenario is a bounded presentation/test orchestration route, not a
+  browser-selectable policy or identity profile and not a new WebMCP tool;
+- Ananke denial, approval, and replay state remain process-local demonstration state;
+- the denial evidence uses canonical digest integrity over authenticated transport and does not
+  claim a signed receipt;
+- no deployed TLS/service identity, durable policy state, operational monitoring, or production
+  operator/authentication boundary exists yet.

@@ -40,6 +40,21 @@ export async function requestPublicationStatus(): Promise<PublicationStatusSnaps
   return (await response.json()) as PublicationStatusSnapshot;
 }
 
+/** Requests only the fixed host-side MC-06 restricted-agent scenario. */
+export async function requestPublicationDenyDemo(): Promise<PublicationResult> {
+  const response = await fetch('/api/publish-document/deny-demo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+
+  if (!response.ok) {
+    throw new Error(`PUBLISH_DOCUMENT_DENY_DEMO_HTTP_${response.status}`);
+  }
+
+  return (await response.json()) as PublicationResult;
+}
+
 export async function decidePublicationApproval(
   approvalRequestId: string,
   decision: PublicationApprovalDecision,

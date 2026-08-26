@@ -110,3 +110,23 @@ Reject and expiry are terminal and publish nothing. Approval identifiers and aut
 do not enter browser URLs. Approval endpoints and responses use the existing no-store controls.
 The operator credential remains host-only; the demonstration operator model is not a production
 authentication boundary.
+
+## MC-06 denial demonstration
+
+The WebMCP discovery surface remains exactly:
+
+```text
+inspect_document
+publish_document
+```
+
+There is no `approve_publication` or `deny_publication` WebMCP tool. The human-facing Console
+may expose a fixed `deny-demo` presentation route, but that route is not discovered as a tool,
+does not accept identity/action/policy/credential parameters, and does not confer authority.
+It merely asks the trusted host to run the fixed restricted-agent scenario. The host injects the
+restricted Ananke credential, and the UI can display only the authoritative result.
+
+For MC-06 the exact `publish_document` operation reaches Fates and is denied by authenticated
+scope policy. A denial is not a pending approval and cannot be upgraded by React state, a browser
+parameter mutation, a previous receipt, or a local approval request. Tool discovery remains
+metadata-only and performs no Fates call, source read, or publication.

@@ -109,3 +109,15 @@ gates, not claims made by MC-01.
 | Expiry resurrection                           | approval lifetime             | Fates marks pending records expired and rejects later approval; Console never refreshes expiry locally. | Demonstration clock/service boundary. |
 | Approval identifier leakage                   | authority metadata             | No approval identifiers or credentials in WebMCP descriptors or URLs; no-store approval responses. | Deployment access-log review remains. |
 | Fates approval mistaken for publication       | effect provenance              | Approved execution obtains a fresh authority; Fates evidence remains `AUTHORIZATION_ONLY_NO_PUBLICATION`, and host execution is separate. | No signed receipt. |
+
+## MC-06 denial threats
+
+| Threat                                      | Asset                    | MC-06 mitigation                                                                                                          | Remaining limitation |
+| ------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| Console synthesizes DENY                   | authority decision       | The restricted scenario calls authenticated Ananke and renders only its `DENIED` outcome/evidence.                       | Host is still demonstration middleware. |
+| Authentication error misreported as DENY    | policy provenance        | The smoke uses a valid restricted bearer credential; malformed/unknown credentials remain fail-closed errors.             | Production credential identity is pending. |
+| Restricted DENY creates approval            | pending authority        | Ananke evaluates the exact deny rule before request validation and approval; no pending approval or execution receipt is issued. | Approval state remains process-local. |
+| DENY upgraded through UI                    | publication effect       | No pending identity exists; the approval endpoint cannot resolve the denial, and the service performs no source read.     | Browser automation remains environment-dependent. |
+| Restricted credential reaches the browser   | authority credential     | Credential is read only in host environment and the bundle scanner checks all known credential names.                     | Deployment secret management remains pending. |
+| Demo selector becomes caller impersonation  | caller identity          | `/api/publish-document/deny-demo` accepts only `{}`; identity/profile/action/digest/purpose/destination are host-fixed. | Route is presentation/test orchestration, not production identity. |
+| Denied response leaks protected content     | document body            | Fates performs zero reads; Console denial branch reads no source and returns only bounded evidence/metadata.               | Reverse-proxy policy remains deployment work. |

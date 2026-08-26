@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import {
   decidePublicationApproval,
+  requestPublicationDenyDemo,
   requestPublicationStatus,
   requestPublishDocument,
 } from '../publication/client';
@@ -69,6 +70,23 @@ export function PublishDocumentPanel() {
     }
   }
 
+  async function runRestrictedDenyDemo() {
+    const requestId = crypto.randomUUID();
+    setState({ status: 'REQUESTED', requestId });
+
+    try {
+      const result = await requestPublicationDenyDemo();
+      const snapshot = await requestPublicationStatus().catch(() => undefined);
+      setState({ status: 'RESULT', result, ...(snapshot ? { snapshot } : {}) });
+    } catch (error) {
+      setState({
+        status: 'ERROR',
+        requestId,
+        message: error instanceof Error ? error.message : 'MC06_DENY_DEMO_FAILED',
+      });
+    }
+  }
+
   const phases = phasesFor(state);
   const result = state.status === 'RESULT' ? state.result : undefined;
   const snapshot =
@@ -78,16 +96,25 @@ export function PublishDocumentPanel() {
     <section className="inspection-panel publication-panel" aria-labelledby="publication-heading">
       <div className="inspection-header">
         <div>
-          <p className="card-label">MC-04 governed mutation</p>
+          <p className="card-label">MC-04 governed mutation · MC-06 denial demo</p>
           <h2 id="publication-heading">publish_document</h2>
         </div>
-        <button
-          type="button"
-          onClick={submitRequest}
-          disabled={state.status === 'REQUESTED' || approvalBusy}
-        >
-          {state.status === 'REQUESTED' ? 'Requesting…' : 'Request publication'}
-        </button>
+        <div className="approval-actions">
+          <button
+            type="button"
+            onClick={submitRequest}
+            disabled={state.status === 'REQUESTED' || approvalBusy}
+          >
+            {state.status === 'REQUESTED' ? 'Requesting…' : 'Request publication'}
+          </button>
+          <button
+            type="button"
+            onClick={runRestrictedDenyDemo}
+            disabled={state.status === 'REQUESTED' || approvalBusy}
+          >
+            Run restricted DENY demo
+          </button>
+        </div>
       </div>
 
       <p className="inspection-copy">
@@ -148,6 +175,10 @@ function PublicationResultView({
         <div>
           <dt>Decision</dt>
           <dd>{result.outcome.status}</dd>
+        </div>
+        <div>
+          <dt>Agent</dt>
+          <dd>{result.outcome.evidence.authenticatedWorkloadIdentity?.actingPrincipalId ?? '—'}</dd>
         </div>
         <div>
           <dt>Approval</dt>
@@ -257,6 +288,29 @@ function PublicationResultView({
           </div>
         </div>
       )}
+      {result.outcome.status === 'DENIED' && (
+        <div className="approval-card" aria-label="Authoritative publication denial">
+          <p className="card-label">Fates-authoritative denial · host not executed</p>
+          <dl className="evidence-grid">
+            <div>
+              <dt>Agent</dt>
+              <dd>{result.outcome.evidence.authenticatedWorkloadIdentity?.actingPrincipalId ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Reason</dt>
+              <dd>{result.outcome.evidence.policyReason ?? result.outcome.reasonCode ?? 'DENIED'}</dd>
+            </div>
+            <div>
+              <dt>Approval request</dt>
+              <dd>{result.outcome.evidence.approvalRequestId ?? 'none'}</dd>
+            </div>
+            <div>
+              <dt>Host effect</dt>
+              <dd>NOT EXECUTED</dd>
+            </div>
+          </dl>
+        </div>
+      )}
       {result.publication.state === 'NOT_PUBLISHED' && (
         <p className="result-note">
           NOT PUBLISHED · {result.publication.reasonCode ?? result.outcome.status}
@@ -270,7 +324,8 @@ function PublicationStatusView({ snapshot }: { readonly snapshot: PublicationSta
   return (
     <p className="result-note">
       DESTINATION STATUS · {snapshot.published ? 'PUBLISHED' : 'NOT PUBLISHED'} ·{' '}
-      {snapshot.destinationId} · {snapshot.sha256 ?? 'no digest'}
+      {snapshot.destinationId} · {snapshot.sha256 ?? 'no digest'} · source reads{' '}
+      {snapshot.sourceReadCount} · executor calls {snapshot.executorInvocationCount}
     </p>
   );
 }

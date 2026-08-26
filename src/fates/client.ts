@@ -286,6 +286,8 @@ function parseAnankeEvidence(
     auditId: stringValue(value.auditId),
     outcomeState,
     policyDecision: stringValue(value.policyDecision),
+    policyReasonCode: stringValue(value.policyReasonCode),
+    policyReason: stringValue(value.policyReason),
     approvalRequestId: stringValue(value.approvalRequestId),
     approvalState: stringValue(value.approvalState),
     approvalActionHash: stringValue(value.approvalActionHash),

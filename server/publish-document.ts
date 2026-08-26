@@ -289,6 +289,17 @@ function phasesForOutcome(
   phases: readonly PublicationLifecyclePhase[],
   outcome: GovernanceOutcome,
 ): readonly PublicationLifecyclePhase[] {
+  if (outcome.status === 'DENIED') {
+    return [
+      ...phases,
+      {
+        name: 'DENIED',
+        source: 'fates-authoritative',
+        evidenceId: outcome.evidence.evidenceId,
+      },
+      { name: 'NOT EXECUTED', source: 'local-observed' },
+    ];
+  }
   if (outcome.status !== 'REQUIRES_APPROVAL') return phases;
   return [
     ...phases,

@@ -14,6 +14,7 @@ import {
 
 export const ANANKE_PUBLICATION_EXECUTION_TOKEN_ENV = 'ANANKE_MOIRAE_PUBLISH_TOKEN';
 export const ANANKE_PUBLICATION_APPROVER_TOKEN_ENV = 'ANANKE_MOIRAE_APPROVER_TOKEN';
+export const ANANKE_PUBLICATION_RESTRICTED_TOKEN_ENV = 'ANANKE_MOIRAE_RESTRICTED_TOKEN';
 
 export type PublicationApprovalDecision = 'APPROVE' | 'REJECT';
 
@@ -31,15 +32,22 @@ export interface AnankePublicationApprovalTransport {
   executeApproved(request: GovernedRequest, approvalRequestId: string): Promise<FatesTransportResponse>;
 }
 
+export interface AnankePublicationDenyTransport {
+  sendRestricted(request: GovernedRequest): Promise<FatesTransportResponse>;
+}
+
 export interface AnankePublicationTransportOptions {
   readonly endpoint: string;
   readonly token: string;
   readonly approverToken?: string;
+  readonly restrictedToken?: string;
   readonly timeoutMs?: number;
   readonly fetchImplementation?: typeof fetch;
 }
 
-export class AnankePublicationFatesTransport implements FatesTransport, AnankePublicationApprovalTransport {
+export class AnankePublicationFatesTransport
+  implements FatesTransport, AnankePublicationApprovalTransport, AnankePublicationDenyTransport
+{
   private readonly timeoutMs: number;
   private readonly fetchImplementation: typeof fetch;
 
@@ -55,6 +63,19 @@ export class AnankePublicationFatesTransport implements FatesTransport, AnankePu
   public async send(request: GovernedRequest): Promise<FatesTransportResponse> {
     assertExactConsoleRequest(request);
     return this.sendExecution(request);
+  }
+
+  /**
+   * Runs only the fixed host-side MC-06 denied-agent scenario. The caller
+   * cannot select the identity, action, digest, purpose, or destination; the
+   * restricted credential is injected from trusted host configuration.
+   */
+  public async sendRestricted(request: GovernedRequest): Promise<FatesTransportResponse> {
+    assertExactConsoleRequest(request);
+    if (!this.options.restrictedToken?.trim()) {
+      throw new Error('ANANKE_MOIRAE_RESTRICTED_TOKEN_UNAVAILABLE');
+    }
+    return this.sendExecution(request, undefined, this.options.restrictedToken);
   }
 
   public async executeApproved(
@@ -83,6 +104,7 @@ export class AnankePublicationFatesTransport implements FatesTransport, AnankePu
   private async sendExecution(
     request: GovernedRequest,
     approvalRequestId?: string,
+    token = this.options.token,
   ): Promise<FatesTransportResponse> {
     const correlationId = request.requestId;
     const binding: FatesTransportBinding = {
@@ -96,7 +118,7 @@ export class AnankePublicationFatesTransport implements FatesTransport, AnankePu
       const response = await this.fetchImplementation(this.options.endpoint, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${this.options.token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
           'X-Ananke-Request-Id': request.requestId,
           'X-Ananke-Correlation-Id': correlationId,
@@ -172,11 +194,13 @@ export function createAnankePublicationFatesTransportFromEnvironment(
   if (!token || !token.trim()) return undefined;
   const endpoint = env.ANANKE_MOIRAE_EXECUTION_URL ?? 'http://127.0.0.1:3000/api/execute';
   const approverToken = env[ANANKE_PUBLICATION_APPROVER_TOKEN_ENV];
+  const restrictedToken = env[ANANKE_PUBLICATION_RESTRICTED_TOKEN_ENV];
   try {
     return new AnankePublicationFatesTransport({
       endpoint,
       token,
       ...(approverToken ? { approverToken } : {}),
+      ...(restrictedToken ? { restrictedToken } : {}),
       fetchImplementation,
     });
   } catch {

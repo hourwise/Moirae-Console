@@ -11,6 +11,11 @@ const forbidden = [
   { label: 'private-key marker', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
   { label: 'Windows user path', pattern: /[DC]:\\Users\\/ },
   { label: 'server-only fixture path', pattern: 'demo-policy-001.txt' },
+  { label: 'server-only publication target', pattern: 'moirae-demo-publication-slot.v1.bin' },
+  { label: 'execution credential name', pattern: 'ANANKE_MOIRAE_EXECUTION_TOKEN' },
+  { label: 'publication credential name', pattern: 'ANANKE_MOIRAE_PUBLISH_TOKEN' },
+  { label: 'approver credential name', pattern: 'ANANKE_MOIRAE_APPROVER_TOKEN' },
+  { label: 'restricted credential name', pattern: 'ANANKE_MOIRAE_RESTRICTED_TOKEN' },
   { label: 'server-only source marker', pattern: 'FixedDemoDocumentSource' },
   { label: 'Node filesystem import', pattern: 'node:fs' },
 ];

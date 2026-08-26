@@ -202,3 +202,28 @@ integrity status remains `AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`; canonical di
 authenticated transport are present, but MC-05 does not claim cryptographically signed
 receipts. The approval store and operator sessions are process-local demonstration state and
 are not restart-persistent.
+
+## MC-06 authoritative DENY
+
+The denied demonstration still submits the exact canonical operation:
+
+```text
+fates.moirae.publish-document.v1
+documentId=demo-policy-001
+expectedSha256=f00d46e0cb81f67ed7a3d516939bd86ce5401e6c01321dbc90ca3374899a2d6c
+destinationId=moirae.demo-publication-slot.v1
+purpose=moirae.document-publication
+```
+
+Ananke authenticates the host-held restricted workload `moirae-restricted-agent`, whose
+bounded resource scope contains the document but no `publish` operation. A server-owned exact
+denial rule binds that profile, purpose, scope, and canonical request digest and produces the
+authoritative `DENIED` policy result before approval or execution. This is a Fates/Ananke
+authority decision, not a Console blacklist, UI state, malformed request, authentication error,
+or transport failure.
+
+The denial evidence records the canonical action/resource/purpose, workload provenance, request
+and correlation identity, policy decision/reason, decision and audit identity, and
+`AUTHORIZATION_ONLY_NO_PUBLICATION` semantics with zero Fates resource reads and zero Fates
+publication attempts. No approval request, execution receipt, or host publication authority is
+issued. Fates does not possess, read, or publish the document.

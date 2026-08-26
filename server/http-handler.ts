@@ -1,4 +1,9 @@
-import { createFatesClient, failedOutcome, parseFatesOutcome } from '../src/fates/client';
+import {
+  createFatesClient,
+  failedOutcome,
+  parseFatesOutcome,
+  snapshotGovernedRequest,
+} from '../src/fates/client';
 import type { FatesClient } from '../src/fates/client';
 import type {
   ApprovalRequiredOutcome,
@@ -16,10 +21,12 @@ import { createAnankeFatesTransportFromEnvironment } from './ananke-transport';
 import {
   createAnankePublicationFatesTransportFromEnvironment,
   type AnankePublicationApprovalTransport,
+  type AnankePublicationDenyTransport,
   type AnankeApprovalTransition,
 } from './ananke-publication-transport';
 import { governInspectDocumentInvocation, InspectDocumentService } from './inspect-document';
 import { governPublishDocumentInvocation, PublishDocumentService } from './publish-document';
+import { FixedDemoDocumentSource, type HostDocumentSource } from './document-source';
 import { FixedFilePublicationStore, type PublicationStore } from './publication-store';
 
 export type InspectDocumentHttpResult = InspectionResult | InvalidInspectionRequest;
@@ -53,12 +60,16 @@ export class PublishDocumentHttpHandler {
   private readonly client: FatesClient;
   private readonly publicationStore: PublicationStore;
   private readonly approvalTransport?: AnankePublicationApprovalTransport;
+  private readonly restrictedTransport?: AnankePublicationDenyTransport;
+  private readonly sourceReadCount: { value: number } = { value: 0 };
   private readonly pendingApprovals = new Map<string, PendingPublicationApproval>();
 
   public constructor(
     client?: FatesClient,
     publicationStore?: PublicationStore,
     approvalTransport?: AnankePublicationApprovalTransport,
+    restrictedTransport?: AnankePublicationDenyTransport,
+    documentSource?: HostDocumentSource,
   ) {
     const defaultTransport = createAnankePublicationFatesTransportFromEnvironment();
     this.client =
@@ -68,9 +79,17 @@ export class PublishDocumentHttpHandler {
         : createFatesClient({ environment: 'production' }));
     this.publicationStore = publicationStore ?? new FixedFilePublicationStore();
     this.approvalTransport = approvalTransport ?? defaultTransport;
+    this.restrictedTransport = restrictedTransport ?? defaultTransport;
+    const source = documentSource ?? new FixedDemoDocumentSource();
     this.service = new PublishDocumentService({
       mode: 'production',
       publicationStore: this.publicationStore,
+      documentSource: {
+        read: async (documentId) => {
+          this.sourceReadCount.value += 1;
+          return source.read(documentId);
+        },
+      },
     });
   }
 
@@ -95,6 +114,35 @@ export class PublishDocumentHttpHandler {
       });
     }
     return result;
+  }
+
+  /**
+   * Host-only MC-06 presentation scenario. The browser can request this
+   * fixed demonstration, but cannot select or supply the restricted caller
+   * identity, credential, action, purpose, digest, or destination.
+   */
+  public async denyDemo(): Promise<PublishDocumentHttpResult> {
+    const request = restrictedDenyRequest();
+    if (!this.restrictedTransport) {
+      return this.service.publish(
+        request,
+        failedOutcome(request.requestId, new Error('ANANKE_MOIRAE_RESTRICTED_TOKEN_UNAVAILABLE')),
+      );
+    }
+
+    try {
+      const response = await this.restrictedTransport.sendRestricted(request);
+      const outcome = parseFatesOutcome(response, request.requestId);
+      return this.service.publish(request, outcome);
+    } catch (error) {
+      return this.service.publish(
+        request,
+        failedOutcome(
+          request.requestId,
+          error instanceof Error ? error : new Error('ANANKE_RESTRICTED_DENY_FAILED'),
+        ),
+      );
+    }
   }
 
   public async decideApproval(payload: unknown): Promise<PublishDocumentHttpResult> {
@@ -164,8 +212,11 @@ export class PublishDocumentHttpHandler {
     }
   }
 
-  public async status(): Promise<Awaited<ReturnType<PublicationStore['status']>>> {
-    return this.publicationStore.status();
+  public async status(): Promise<Awaited<ReturnType<PublicationStore['status']>> & { sourceReadCount: number }> {
+    return {
+      ...(await this.publicationStore.status()),
+      sourceReadCount: this.sourceReadCount.value,
+    };
   }
 
   private rememberPendingApproval(
@@ -214,6 +265,7 @@ export function createProductionPublishDocumentHttpHandler(
       : createFatesClient({ environment: 'production' }),
     store,
     transport,
+    transport,
   );
 }
 
@@ -245,6 +297,23 @@ const APPROVAL_RECORD_RETENTION_MS = 5 * 60 * 1_000;
 interface ApprovalDecisionRequest {
   readonly approvalRequestId: string;
   readonly decision: 'APPROVE' | 'REJECT';
+}
+
+function restrictedDenyRequest(): GovernedRequest {
+  return snapshotGovernedRequest({
+    requestId: crypto.randomUUID(),
+    action: PUBLISH_DOCUMENT_ACTION,
+    parameters: { documentId: DEMO_DOCUMENT_ID },
+    caller: {
+      kind: 'agent',
+      id: 'moirae-restricted-agent',
+      sessionId: 'moirae-restricted-agent-session',
+    },
+    context: {
+      source: 'webmcp',
+      purpose: 'moirae.document-publication',
+    },
+  });
 }
 
 function parseApprovalDecision(value: unknown): ApprovalDecisionRequest | undefined {
