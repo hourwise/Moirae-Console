@@ -12,10 +12,10 @@
   "requiredRuntimeSources": [
     {
       "repository": "https://github.com/hourwise/Project-Ananke",
-      "sha": "5fa868b8bf1ed2f76bcf6427efc5ccf5f09939f0",
+      "sha": "5fa868b0355c7e2f000ef80db5d27d5c6987e6f2",
       "runtimeBaseSha": "0afd16ac3827c568bf3d3a4affcaf85ada7800b2",
       "provenanceBranch": "codex/mc-11-public-source-runtime-contracts",
-      "provenanceCommit": "5fa868b8bf1ed2f76bcf6427efc5ccf5f09939f0",
+      "provenanceCommit": "5fa868b0355c7e2f000ef80db5d27d5c6987e6f2",
       "license": "MIT",
       "runtimeRole": "Canonical authenticated Fates HTTP authority",
       "consumption": "source checkout/workspace build",

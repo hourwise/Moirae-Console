@@ -30,7 +30,7 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 | Component                             | Exact source checkpoint                                                                                                 | Runtime role                                                       | Current source status                                         |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
 | Moirae Console                        | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus this document commit                                                    | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Local source is present; public visibility is not authorized  |
-| Project Ananke                        | `5fa868b8bf1ed2f76bcf6427efc5ccf5f09939f0` (runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Required; source repository is currently private |
+| Project Ananke                        | `5fa868b0355c7e2f000ef80db5d27d5c6987e6f2` (runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Required; source repository is currently private |
 | Project-Adrasteia / Runtime Contracts | `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`) | Runtime contract package consumed by Ananke | Required; source repository is currently private |
 
 The Console commit is the accepted MC-09 remediation checkpoint. The
@@ -110,7 +110,7 @@ to the reviewed source commits.
 npm ci --no-audit --no-fund
 npm run build
 
-# Project Ananke at 5fa868b8bf1ed2f76bcf6427efc5ccf5f09939f0
+# Project Ananke at 5fa868b0355c7e2f000ef80db5d27d5c6987e6f2
 npm ci --no-audit --no-fund
 npm run verify:adrasteia-source
 npm run build
