@@ -117,6 +117,20 @@ function InspectionResultView({ result }: { readonly result: InspectionResult })
           <dd>{result.outcome.evidence.authorityBindingDigest ?? '—'}</dd>
         </div>
         <div>
+          <dt>Authority receipt digest</dt>
+          <dd>{result.outcome.evidence.authorityReceiptDigest ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Authority lifetime</dt>
+          <dd>
+            {result.outcome.evidence.issuedAt ?? '—'} → {result.outcome.evidence.expiresAt ?? '—'}
+          </dd>
+        </div>
+        <div>
+          <dt>Replay state</dt>
+          <dd>{result.outcome.evidence.replayState ?? '—'}</dd>
+        </div>
+        <div>
           <dt>Fates action</dt>
           <dd>{result.outcome.evidence.canonicalAction ?? '—'}</dd>
         </div>

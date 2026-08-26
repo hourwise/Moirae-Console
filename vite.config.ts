@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 
 import { createProductionInspectDocumentHttpHandler } from './server/http-handler';
+import { setNoStoreResponseHeaders } from './server/http-response';
 
 export default defineConfig({
   plugins: [react(), governedInspectDocumentPlugin()],
@@ -103,5 +104,6 @@ function readJsonBody(request: IncomingMessage): Promise<unknown> {
 function sendJson(response: ServerResponse, payload: unknown, statusCode = 200): void {
   response.statusCode = statusCode;
   response.setHeader('Content-Type', 'application/json; charset=utf-8');
+  setNoStoreResponseHeaders(response);
   response.end(JSON.stringify(payload));
 }

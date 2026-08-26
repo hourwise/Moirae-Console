@@ -49,10 +49,13 @@ transaction is explicitly authorization-only; the Console host owns the later do
 
 ## Future slices
 
-| Slice | Intended action    | Boundary                      |
-| ----- | ------------------ | ----------------------------- |
-| MC-01 | `inspect_document` | bounded disclosure prototype  |
-| MC-02 | `inspect_document` | live authoritative transport  |
-| MC-03 | separate operation | exact scope and effect design |
+| Slice | Intended action    | Boundary                             |
+| ----- | ------------------ | ------------------------------------ |
+| MC-01 | `inspect_document` | bounded disclosure prototype         |
+| MC-02 | `inspect_document` | live authoritative transport         |
+| MC-03 | `inspect_document` | fresh, one-use authoritative receipt |
 
-No mutation, approval, or destructive challenge workflow is implemented in MC-02.
+MC-03 keeps the exact one-tool surface and adds no mutation, approval, or destructive challenge
+workflow. Freshness and receipt consumption are host/Fates controls, not WebMCP input. The
+browser cannot choose `issuedAt`, `expiresAt`, `receiptId`, `nonce`, or consumed state; a failed
+or replayed request remains `NOT_DISCLOSED`.

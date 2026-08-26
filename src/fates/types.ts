@@ -44,6 +44,13 @@ export interface GovernanceEvidence {
   readonly correlationId?: string;
   readonly canonicalRequestDigest?: string;
   readonly authorityBindingDigest?: string;
+  readonly authorityReceiptDigest?: string;
+  readonly issuedAt?: string;
+  readonly expiresAt?: string;
+  readonly nonce?: string;
+  readonly replayKeyDigest?: string;
+  readonly replayState?: string;
+  readonly policyVersion?: string;
   readonly decisionId?: string;
   readonly outcomeId?: string;
   readonly auditId?: string;

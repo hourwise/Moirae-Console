@@ -17,7 +17,13 @@ import type {
 import { FixedDemoDocumentSource } from './document-source';
 import type { HostDocumentSource } from './document-source';
 import {
+  InMemoryAuthorityConsumptionStore,
+  type AuthorityConsumptionStore,
+} from './authority-consumption';
+import {
+  calculateMoiraeAuthorityReceiptDigest,
   MOIRAE_AUTHORITY_BINDING,
+  MOIRAE_AUTHORITY_MAX_LIFETIME_MS,
   MOIRAE_FATES_ACTION,
   MOIRAE_FATES_CANONICAL_REQUEST_DIGEST,
   MOIRAE_FATES_EXPECTED_SHA256,
@@ -29,13 +35,19 @@ export type InspectDisclosureMode = 'production' | 'synthetic-demo';
 export interface InspectDocumentServiceOptions {
   readonly mode: InspectDisclosureMode;
   readonly documentSource?: HostDocumentSource;
+  readonly consumptionStore?: AuthorityConsumptionStore;
+  readonly now?: () => number;
 }
 
 export class InspectDocumentService {
   private readonly documentSource: HostDocumentSource;
+  private readonly consumptionStore: AuthorityConsumptionStore;
+  private readonly now: () => number;
 
   public constructor(private readonly options: InspectDocumentServiceOptions) {
     this.documentSource = options.documentSource ?? new FixedDemoDocumentSource();
+    this.consumptionStore = options.consumptionStore ?? new InMemoryAuthorityConsumptionStore();
+    this.now = options.now ?? Date.now;
   }
 
   public async disclose(
@@ -45,8 +57,9 @@ export class InspectDocumentService {
     const snapshot = snapshotGovernedRequest(request);
     const initialPhases = initialLifecycle();
     const evidenceMode = evidenceModeFor(outcome);
+    const nowMs = this.now();
 
-    if (!mayDisclose(outcome, snapshot, this.options.mode)) {
+    if (!mayDisclose(outcome, snapshot, this.options.mode, nowMs)) {
       return {
         request: snapshot,
         outcome,
@@ -57,6 +70,32 @@ export class InspectDocumentService {
           reasonCode: reasonForNoDisclosure(outcome, snapshot),
         },
       };
+    }
+
+    if (this.options.mode === 'production') {
+      const expiresAtMs = Date.parse(outcome.evidence.expiresAt as string);
+      const claim = this.consumptionStore.claim(
+        outcome.evidence.receiptId as string,
+        expiresAtMs,
+        nowMs,
+      );
+      if (!claim.accepted) {
+        return {
+          request: snapshot,
+          outcome,
+          phases: initialPhases,
+          disclosure: {
+            state: 'NOT_DISCLOSED',
+            evidenceMode,
+            reasonCode:
+              claim.reason === 'replayed'
+                ? 'REPLAY_REJECTED'
+                : claim.reason === 'expired'
+                  ? 'STALE_AUTHORITY'
+                  : 'AUTHORITY_CONSUMPTION_UNAVAILABLE',
+          },
+        };
+      }
     }
 
     const admittedPhase: LifecyclePhase = {
@@ -156,6 +195,7 @@ export function mayDisclose(
   outcome: unknown,
   request: GovernedRequest,
   mode: InspectDisclosureMode,
+  nowMs = Date.now(),
 ): boolean {
   if (!isStructurallyValidAllowedOutcome(outcome)) {
     return false;
@@ -166,7 +206,7 @@ export function mayDisclose(
   }
 
   if (mode === 'production') {
-    return isAuthoritativeMoiraeAllow(outcome, request);
+    return isAuthoritativeMoiraeAllow(outcome, request, nowMs);
   }
 
   return outcome.evidence.source === 'synthetic-test' && outcome.evidence.authority === 'synthetic';
@@ -188,6 +228,7 @@ function isExactInspectRequest(request: GovernedRequest): boolean {
 function isAuthoritativeMoiraeAllow(
   outcome: GovernanceOutcome & { readonly status: 'ALLOWED' },
   request: GovernedRequest,
+  nowMs: number,
 ): boolean {
   const evidence = outcome.evidence;
   const identity = evidence.authenticatedWorkloadIdentity;
@@ -205,15 +246,40 @@ function isAuthoritativeMoiraeAllow(
     evidence.correlationId === request.requestId &&
     evidence.canonicalRequestDigest === MOIRAE_FATES_CANONICAL_REQUEST_DIGEST &&
     isSha256(evidence.authorityBindingDigest) &&
+    isSha256(evidence.authorityReceiptDigest) &&
+    isCanonicalTimestampWithinLifetime(evidence.issuedAt, evidence.expiresAt, nowMs) &&
+    nonEmptyString(evidence.receiptId) &&
+    nonEmptyString(evidence.nonce) &&
+    isSha256(evidence.replayKeyDigest) &&
+    evidence.replayKeyDigest === evidence.authorityBindingDigest &&
+    evidence.replayState === 'CONSUMED_ONCE' &&
     nonEmptyString(evidence.decisionId) &&
     nonEmptyString(evidence.outcomeId) &&
     nonEmptyString(evidence.auditId) &&
     evidence.outcomeState === 'COMPLETED' &&
+    nonEmptyString(evidence.policyVersion) &&
     evidence.policyDecision === 'ALLOW' &&
     evidence.effectSemantics === 'AUTHORIZATION_ONLY_NO_RESOURCE_READ' &&
     evidence.fatesResourceReadAttemptCount === 0 &&
     evidence.documentDisclosureByFates === false &&
     isAuthenticatedWorkloadIdentity(identity) &&
+    evidence.authorityReceiptDigest ===
+      calculateMoiraeAuthorityReceiptDigest({
+        documentId: evidence.documentId as string,
+        expectedSha256: evidence.expectedSha256 as string,
+        purpose: evidence.purpose as string,
+        fatesRequestId: evidence.fatesRequestId as string,
+        correlationId: evidence.correlationId as string,
+        canonicalRequestDigest: evidence.canonicalRequestDigest as string,
+        authorityBindingDigest: evidence.authorityBindingDigest as string,
+        policyVersion: evidence.policyVersion as string,
+        decisionId: evidence.decisionId as string,
+        outcomeId: evidence.outcomeId as string,
+        issuedAt: evidence.issuedAt as string,
+        expiresAt: evidence.expiresAt as string,
+        receiptId: evidence.receiptId as string,
+        nonce: evidence.nonce as string,
+      }) &&
     transportBinding?.canonicalAction === MOIRAE_AUTHORITY_BINDING.canonicalAction &&
     transportBinding.documentId === MOIRAE_AUTHORITY_BINDING.documentId &&
     transportBinding.expectedSha256 === MOIRAE_AUTHORITY_BINDING.expectedSha256 &&
@@ -283,7 +349,17 @@ function reasonForNoDisclosure(outcome: GovernanceOutcome, request: GovernedRequ
   if (outcome.status === 'REQUIRES_APPROVAL') {
     return 'APPROVAL_NOT_IMPLEMENTED';
   }
+  if (outcome.status === 'FAILED' && outcome.errorCode === 'CONFLICT') {
+    return 'REPLAY_REJECTED';
+  }
+  if (outcome.status === 'FAILED' && outcome.errorCode === 'STALE_STATE') {
+    return 'STALE_AUTHORITY';
+  }
   if (outcome.status === 'ALLOWED') {
+    const expiresAtMs = Date.parse(outcome.evidence.expiresAt ?? '');
+    if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+      return 'STALE_AUTHORITY';
+    }
     return 'UNVERIFIABLE_AUTHORIZATION';
   }
   return outcome.status;
@@ -299,6 +375,25 @@ function nonEmptyString(value: unknown): value is string {
 
 function isSha256(value: unknown): value is string {
   return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
+}
+
+function isCanonicalTimestampWithinLifetime(
+  issuedAt: unknown,
+  expiresAt: unknown,
+  nowMs: number,
+): issuedAt is string {
+  if (typeof issuedAt !== 'string' || typeof expiresAt !== 'string') return false;
+  const issuedAtMs = Date.parse(issuedAt);
+  const expiresAtMs = Date.parse(expiresAt);
+  if (!Number.isFinite(issuedAtMs) || !Number.isFinite(expiresAtMs)) return false;
+  if (new Date(issuedAtMs).toISOString() !== issuedAt) return false;
+  if (new Date(expiresAtMs).toISOString() !== expiresAt) return false;
+  return (
+    issuedAtMs <= nowMs &&
+    expiresAtMs > nowMs &&
+    expiresAtMs > issuedAtMs &&
+    expiresAtMs - issuedAtMs <= MOIRAE_AUTHORITY_MAX_LIFETIME_MS
+  );
 }
 
 function isAuthenticatedWorkloadIdentity(

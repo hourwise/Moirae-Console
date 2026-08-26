@@ -13,6 +13,7 @@ import type { GovernanceOutcome, GovernedRequest } from '../../src/fates/types';
 import { createProductionInspectDocumentHttpHandler } from '../../server/http-handler';
 import { AnankeFatesTransport } from '../../server/ananke-transport';
 import {
+  calculateMoiraeAuthorityReceiptDigest,
   MOIRAE_AUTHORITY_BINDING,
   MOIRAE_FATES_ACTION,
   MOIRAE_FATES_CANONICAL_REQUEST_DIGEST,
@@ -452,6 +453,48 @@ function anankeResponse(
   outcomePatch: Record<string, unknown> = {},
   approvalGrantId?: string,
 ) {
+  const issuedAt = new Date(Date.now() - 100).toISOString();
+  const expiresAt = new Date(Date.now() + 4_900).toISOString();
+  const receiptId = 'receipt-mc02-001';
+  const nonce = 'nonce-mc02-001';
+  const authorityBindingDigest = 'b'.repeat(64);
+  const evidence = {
+    action: MOIRAE_FATES_ACTION,
+    documentId: DEMO_DOCUMENT_ID,
+    expectedSha256: MOIRAE_FATES_EXPECTED_SHA256,
+    canonicalRequestDigest: MOIRAE_FATES_CANONICAL_REQUEST_DIGEST,
+    requestSchemaId: 'urn:fates:moirae:inspect-document-request:v1',
+    requestSchemaSha256: 'c'.repeat(64),
+    effectSemantics: 'AUTHORIZATION_ONLY_NO_RESOURCE_READ',
+    fatesResourceReadAttemptCount: 0,
+    documentDisclosureByFates: false,
+    decisionId: 'decision-mc02-001',
+    outcomeId: 'outcome-mc02-001',
+    routeState: 'ananke-authority',
+    dispatchState: 'authority-granted-no-resource-read',
+    requestId: 'ananke-request-mc02-001',
+    correlationId,
+    policyVersion: 'policy-v1',
+    authorityBindingDigest,
+    issuedAt,
+    expiresAt,
+    receiptId,
+    nonce,
+    replayKeyDigest: authorityBindingDigest,
+    replayState: 'CONSUMED_ONCE',
+    authenticatedWorkloadIdentity: {
+      authenticatedPrincipalId: 'moirae-console-host',
+      authenticatedPrincipalKind: 'service',
+      actingPrincipalId: 'moirae-document-inspection-agent',
+      actingPrincipalKind: 'agent',
+      claim: 'Authenticated Ananke workload identity',
+    },
+    policyDecision: 'ALLOW',
+    authorizationDecision: 'ALLOW',
+    auditId: 'audit-mc02-001',
+    auditReference: { auditId: 'audit-mc02-001', sourceRuntime: 'ananke' },
+  };
+
   return {
     ...(approvalGrantId ? { approvalGrantId } : {}),
     outcome: {
@@ -462,34 +505,23 @@ function anankeResponse(
       ...outcomePatch,
     },
     evidence: {
-      action: MOIRAE_FATES_ACTION,
-      documentId: DEMO_DOCUMENT_ID,
-      expectedSha256: MOIRAE_FATES_EXPECTED_SHA256,
-      canonicalRequestDigest: MOIRAE_FATES_CANONICAL_REQUEST_DIGEST,
-      requestSchemaId: 'urn:fates:moirae:inspect-document-request:v1',
-      requestSchemaSha256: 'c'.repeat(64),
-      effectSemantics: 'AUTHORIZATION_ONLY_NO_RESOURCE_READ',
-      fatesResourceReadAttemptCount: 0,
-      documentDisclosureByFates: false,
-      decisionId: 'decision-mc02-001',
-      outcomeId: 'outcome-mc02-001',
-      routeState: 'ananke-authority',
-      dispatchState: 'authority-granted-no-resource-read',
-      requestId: 'ananke-request-mc02-001',
-      correlationId,
-      policyVersion: 'policy-v1',
-      authorityBindingDigest: 'b'.repeat(64),
-      authenticatedWorkloadIdentity: {
-        authenticatedPrincipalId: 'moirae-console-host',
-        authenticatedPrincipalKind: 'service',
-        actingPrincipalId: 'moirae-document-inspection-agent',
-        actingPrincipalKind: 'agent',
-        claim: 'Authenticated Ananke workload identity',
-      },
-      policyDecision: 'ALLOW',
-      authorizationDecision: 'ALLOW',
-      auditId: 'audit-mc02-001',
-      auditReference: { auditId: 'audit-mc02-001', sourceRuntime: 'ananke' },
+      ...evidence,
+      authorityReceiptDigest: calculateMoiraeAuthorityReceiptDigest({
+        documentId: evidence.documentId,
+        expectedSha256: evidence.expectedSha256,
+        purpose: MOIRAE_FATES_PURPOSE,
+        fatesRequestId: evidence.requestId,
+        correlationId: evidence.correlationId,
+        canonicalRequestDigest: evidence.canonicalRequestDigest,
+        authorityBindingDigest: evidence.authorityBindingDigest,
+        policyVersion: evidence.policyVersion,
+        decisionId: evidence.decisionId,
+        outcomeId: evidence.outcomeId,
+        issuedAt,
+        expiresAt,
+        receiptId,
+        nonce,
+      }),
       ...evidencePatch,
     },
   };

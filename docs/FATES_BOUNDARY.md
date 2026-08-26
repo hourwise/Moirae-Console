@@ -111,3 +111,34 @@ The Vite middleware is demonstration-only. A production deployment must replace 
 authenticated host/service boundary, secret custody, endpoint controls, response cache policy,
 TLS/service identity, and operational timeout/replay controls. No browser JavaScript receives
 the token or direct access to Ananke.
+
+## MC-03 freshness and replay boundary
+
+The MC-03 Ananke change is limited to the existing canonical action
+`fates.moirae.inspect-document.v1`; it does not copy the Moirae fixture into Fates and does not
+modify Runtime Contracts, Mnemosyne, Horae, or Moirae Code. The action now issues a bounded
+authority-only receipt with:
+
+- `issuedAt` and `expiresAt` from the Ananke host clock;
+- a 5-second demonstration lifetime, never exceeding the configured 10-second maximum;
+- `receiptId` and `nonce` as one-use identity material;
+- `replayKeyDigest` bound to the exact action, arguments, authenticated workload context,
+  purpose, and correlation;
+- `authorityReceiptDigest` covering the exact semantic and freshness fields.
+
+The Ananke replay guard rejects a repeated canonical replay key during the running gateway
+process. The Console independently claims the returned `receiptId` before its own fixed-byte
+read using a bounded host-local consumption store. These are one-use semantics for the
+concrete governed request; browser storage is never used. Expired entries are cleaned up.
+
+The current architecture has no production signing-key or signed-receipt verifier available
+for this action. The digest is therefore canonical digest integrity transported over the
+authenticated host-to-Ananke boundary, not a cryptographic signature. The exact status is:
+
+```text
+AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY
+```
+
+The in-memory Console consumption store is not restart-persistent. Cross-restart replay
+protection, durable receipt retention, TLS/service identity, and operational monitoring remain
+deployment work and are not claimed by MC-03.

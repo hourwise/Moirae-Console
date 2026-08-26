@@ -40,7 +40,7 @@ Agent / Browser / WebMCP
 The diagram intentionally does not prescribe an internal order between Fates. The canonical
 Fates integration documentation remains authoritative for those runtime relationships.
 
-## MC-00 through MC-02 boundary
+## MC-00 through MC-03 boundary
 
 The WebMCP adapter accepts an invocation, validates that the tool is registered, snapshots
 the request, and submits it to the Console-facing `FatesClient`. It returns the authoritative
@@ -88,13 +88,36 @@ tool, parameters)`.
     document identity and content digest but does not possess or read the Console fixture.
 12. **MC-INV-012 — Same-byte disclosure.** The host hashes the exact immutable byte snapshot
     that it converts into the disclosed response body; a digest mismatch discloses nothing.
+13. **MC-INV-013 — Fresh authority.** The host rejects future, malformed, inverted, expired,
+    or overlong Fates authority timestamps and never extends them.
+14. **MC-INV-014 — One-use receipt.** A successfully consumed authoritative receipt cannot be
+    reused by the same host process for another disclosure.
+15. **MC-INV-015 — Receipt-bound freshness.** Freshness and nonce fields are included in the
+    canonical receipt digest and are rejected when altered without a matching digest.
+16. **MC-INV-016 — Cache minimisation.** Governed success and failure responses carry bounded
+    no-store cache controls; credentials and receipt material are not placed in URLs.
+
+MC-03 adds bounded freshness and one-use semantics to the same path. Ananke issues
+`issuedAt`, `expiresAt` (5 seconds, with a 10-second maximum), `receiptId`, `nonce`, and a
+canonical `authorityReceiptDigest` in its authority-only evidence. The receipt digest is a
+cross-field integrity checksum, not a signature. The current guarantee is therefore
+`AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`; cryptographic signed-receipt verification is not
+claimed. Ananke also rejects the same canonical replay key once per running gateway process.
+
+The consuming Console claims the receipt ID in a bounded host-local store before reading the
+fixture. Expired entries are cleaned up and the store has a fixed capacity. This demonstration
+store is intentionally not restart-persistent; a production deployment must replace it with a
+durable authenticated store before claiming replay protection across host restarts. Browser
+input cannot choose the lifetime, nonce, receipt ID, or consumed state. Governed responses use
+`Cache-Control: no-store` and related no-cache controls.
 
 These are boundary obligations, not a claim that MC-00 proves the upstream Fates system or
 future transport secure against every threat.
 
 ## Future direction
 
-MC-02 implements the live authoritative transport for one fixed read-only `inspect_document`
-action. A later slice may address a separate, explicitly authorized operation, but it must not
-reuse this demonstration fixture boundary as a general document store or treat an
+MC-03 hardens the existing live authoritative transport for one fixed read-only
+`inspect_document` action with fresh, one-use authority. A later slice may address a separate,
+explicitly authorized operation, but it must not reuse this demonstration fixture boundary as a
+general document store or treat an
 authorization-only Fates outcome as a document read.
