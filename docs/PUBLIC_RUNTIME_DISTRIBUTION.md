@@ -33,9 +33,9 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 | Project Ananke                        | `693b386218e73afaa579cb6457f054007293581b` plus MC-10 license branch `0afd16a` | Canonical authenticated Fates HTTP authority                       | Required; source repository is currently private              |
 | Project-Adrasteia / Runtime Contracts | `6aba3ef466a16292689d4afaf9f9bc40dc013301`                                     | Runtime contract package consumed by Ananke                        | Required; source repository and release are currently private |
 
-The Console commit is the accepted MC-09 remediation checkpoint. The final
-Console SHA for this documentation change is recorded in the commit and
-manifest after commit creation.
+The Console commit is the accepted MC-09 remediation checkpoint. The
+distribution documents are additional review material on the bounded MC-09
+branch and do not alter that runtime checkpoint.
 
 ## Not required by the exact challenge runtime
 

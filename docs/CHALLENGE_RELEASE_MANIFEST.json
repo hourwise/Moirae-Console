@@ -5,7 +5,7 @@
   "deploymentAuthorized": false,
   "console": {
     "repository": "https://github.com/hourwise/Moirae-Console",
-    "sha": "4185c57ef7d53f2d4826daccb3f7b90de6dca902",
+    "sha": "0434c7b8e73b41c175a0b0fb3998f9c5cf4552de",
     "license": "Apache-2.0",
     "runtimeRole": "WebMCP surface and trusted Moirae host boundary"
   },
