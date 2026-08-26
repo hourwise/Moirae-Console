@@ -6,7 +6,14 @@ boundary; it does not copy, fork, or reimplement Fates policy code.
 
 ## Distribution decision
 
-The release candidate uses the public-dependency strategy:
+MC-10 has traced the real runtime graph and has not yet cleared the public
+distribution gate. The exact graph, license matrix, artifact comparison, and
+clean-room blocker are recorded in
+[`PUBLIC_RUNTIME_DISTRIBUTION.md`](PUBLIC_RUNTIME_DISTRIBUTION.md) and
+[`CHALLENGE_RELEASE_MANIFEST.json`](CHALLENGE_RELEASE_MANIFEST.json).
+
+The intended release model remains the public-dependency strategy, subject to
+the separate public-source and artifact-provenance gate:
 
 - Moirae Console is the submitted application repository.
 - Project-Ananke is the required Fates runtime boundary and must be publicly reachable at the
