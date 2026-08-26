@@ -36,6 +36,21 @@ MC-04 mutation-specific limitations:
 These items are intentionally recorded rather than hidden or resolved by dependency churn in
 this bounded slice.
 
+MC-14 red-team remediation status:
+
+- Ananke and Console now reject reuse of configured credentials across the inspection,
+  publication, restricted, approver, and operator-step-up boundaries. Diagnostics identify
+  environment variable names only and never secret values.
+- The fixed publication store installs a completed temporary file with an atomic no-overwrite
+  operation. Identical concurrent followers report `ALREADY_PUBLISHED`; different content is
+  a destination conflict. Unexpected target read/stat errors fail closed instead of being
+  treated as absence.
+- Production-served HTML and static assets include a narrow same-origin CSP with
+  `frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, and
+  `X-Content-Type-Options: nosniff`.
+- The remediation does not add durable multi-process coordination, signed receipts, or
+  production operator authentication. Those existing limitations remain deployment work.
+
 MC-05 approval-specific limitations:
 
 - the demonstration operator uses a distinct host-side bearer token and fixed operator identity;

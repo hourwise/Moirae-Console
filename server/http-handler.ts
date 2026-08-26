@@ -26,6 +26,7 @@ import {
   type AnankePublicationDenyTransport,
   type AnankeApprovalTransition,
 } from './ananke-publication-transport';
+import { assertSafeConsoleCredentialComposition } from './credential-composition';
 import { governInspectDocumentInvocation, InspectDocumentService } from './inspect-document';
 import { governPublishDocumentInvocation, PublishDocumentService } from './publish-document';
 import { FixedDemoDocumentSource, type HostDocumentSource } from './document-source';
@@ -301,6 +302,7 @@ export function createProductionPublishDocumentHttpHandler(
   env: NodeJS.ProcessEnv = process.env,
   fetchImplementation: typeof fetch = fetch,
 ): PublishDocumentHttpHandler {
+  assertSafeConsoleCredentialComposition(env);
   const transport = createAnankePublicationFatesTransportFromEnvironment(env, fetchImplementation);
   const store = new FixedFilePublicationStore({
     ...(env.MOIRAE_PUBLICATION_STORE_ROOT ? { rootPath: env.MOIRAE_PUBLICATION_STORE_ROOT } : {}),
@@ -321,6 +323,7 @@ export function createProductionInspectDocumentHttpHandler(
   env: NodeJS.ProcessEnv = process.env,
   fetchImplementation: typeof fetch = fetch,
 ): InspectDocumentHttpHandler {
+  assertSafeConsoleCredentialComposition(env);
   return new InspectDocumentHttpHandler(createProductionFatesClient(env, fetchImplementation));
 }
 

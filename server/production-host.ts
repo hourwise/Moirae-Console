@@ -8,7 +8,8 @@ import {
   createProductionPublishDocumentHttpHandler,
 } from './http-handler';
 import { decodePathname, handleMoiraeApiRequest, isHostOnlyPath, sendJson } from './http-boundary';
-import { setNoStoreResponseHeaders } from './http-response';
+import { setNoStoreResponseHeaders, setStaticResponseHeaders } from './http-response';
+import { assertSafeConsoleCredentialComposition } from './credential-composition';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -23,6 +24,7 @@ export interface ProductionHostOptions {
 /** Deployable Node host for the bounded same-origin Console API and assets. */
 export function createMoiraeProductionServer(options: ProductionHostOptions = {}) {
   const env = options.env ?? process.env;
+  assertSafeConsoleCredentialComposition(env);
   const staticRoot = resolve(
     options.staticRoot ?? env.MOIRAE_STATIC_ROOT ?? join(repositoryRoot, 'dist'),
   );
@@ -118,6 +120,7 @@ async function serveStatic(
     response.statusCode = 200;
     response.setHeader('Content-Type', contentType(filePath));
     response.setHeader('Content-Length', String(bytes.byteLength));
+    setStaticResponseHeaders(response);
     response.setHeader(
       'Cache-Control',
       relativePath === 'index.html' ? 'no-cache' : 'public, max-age=31536000, immutable',

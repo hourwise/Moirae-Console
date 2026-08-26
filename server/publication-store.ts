@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, open, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { link, mkdir, open, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -69,7 +69,6 @@ export class FixedFilePublicationStore implements PublicationStore {
     this.executorInvocationCount += 1;
     assertExactInput(input);
     await mkdir(this.rootPath, { recursive: true });
-    await this.reapTemporaryFiles();
 
     const targetPath = join(this.rootPath, TARGET_FILE_NAME);
     const existing = await readExisting(targetPath);
@@ -97,7 +96,29 @@ export class FixedFilePublicationStore implements PublicationStore {
         await handle.close();
       }
       this.beforeRename?.();
-      await rename(temporaryPath, targetPath);
+      try {
+        // A hard link is an atomic no-overwrite install on the same
+        // filesystem. Unlike rename-over-existing, it cannot turn two
+        // concurrent absent-target observations into two successful writes.
+        await link(temporaryPath, targetPath);
+      } catch (error) {
+        if (!isAlreadyExistsError(error)) throw error;
+        const installed = await readExisting(targetPath);
+        if (!installed) {
+          throw new Error('PUBLICATION_DESTINATION_CONFLICT', { cause: error });
+        }
+        if (installed.sha256 !== input.expectedSha256) {
+          throw new Error('PUBLICATION_DESTINATION_CONFLICT', { cause: error });
+        }
+        return {
+          state: 'ALREADY_PUBLISHED',
+          documentId: input.documentId,
+          destinationId: input.destinationId,
+          sha256: installed.sha256,
+          publishedAt: installed.publishedAt,
+          executorInvocationCount: this.executorInvocationCount,
+        };
+      }
 
       const finalBytes = await readFile(targetPath);
       const finalSha256 = sha256(finalBytes);
@@ -112,9 +133,8 @@ export class FixedFilePublicationStore implements PublicationStore {
         publishedAt: new Date(this.now()).toISOString(),
         executorInvocationCount: this.executorInvocationCount,
       };
-    } catch (error) {
+    } finally {
       await unlinkIfPresent(temporaryPath);
-      throw error;
     }
   }
 
@@ -128,20 +148,6 @@ export class FixedFilePublicationStore implements PublicationStore {
       ...(existing ? { sha256: existing.sha256, publishedAt: existing.publishedAt } : {}),
       executorInvocationCount: this.executorInvocationCount,
     };
-  }
-
-  private async reapTemporaryFiles(): Promise<void> {
-    let names: string[];
-    try {
-      names = await readdir(this.rootPath);
-    } catch {
-      return;
-    }
-    await Promise.all(
-      names
-        .filter((name) => name.startsWith(TEMP_FILE_PREFIX))
-        .map((name) => unlinkIfPresent(join(this.rootPath, name))),
-    );
   }
 }
 
@@ -164,9 +170,22 @@ async function readExisting(
     const bytes = await readFile(targetPath);
     const metadata = await stat(targetPath);
     return { sha256: sha256(bytes), publishedAt: metadata.mtime.toISOString() };
-  } catch {
-    return undefined;
+  } catch (error) {
+    if (isNotFoundError(error)) return undefined;
+    throw error;
   }
+}
+
+function isNotFoundError(error: unknown): boolean {
+  return isNodeFileSystemError(error) && error.code === 'ENOENT';
+}
+
+function isAlreadyExistsError(error: unknown): boolean {
+  return isNodeFileSystemError(error) && error.code === 'EEXIST';
+}
+
+function isNodeFileSystemError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === 'string';
 }
 
 async function unlinkIfPresent(path: string): Promise<void> {
