@@ -31,7 +31,8 @@
       "runtimeRole": "Ananke runtime contract dependency",
       "consumption": "exact HTTPS Git source pin in Ananke lockfile; npm prepare builds dist",
       "publiclyReproducibleNow": false,
-      "packageContentSha256": "AAB38EA052AFA8C5230932510DEFB0610B96B1000EAF12A9BE55936D46B6EB40",
+      "packageContentSha256": "0B19E8FBB1759AEEA01A54CC206732F1EC980557B20BFBEE91B0BD39AD5F5BFB",
+      "packageArchiveSha256": "AAB38EA052AFA8C5230932510DEFB0610B96B1000EAF12A9BE55936D46B6EB40",
       "historicalArtifact": "HISTORICAL_PRIVATE_ARTIFACT_NOT_USED_BY_PUBLIC_RELEASE"
     }
   ],
