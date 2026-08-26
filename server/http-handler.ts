@@ -1,16 +1,20 @@
 import { createFatesClient } from '../src/fates/client';
+import type { FatesClient } from '../src/fates/client';
 import type { CallerIdentity, RequestContext } from '../src/fates/types';
 import type { InvalidInspectionRequest, InspectionResult } from '../src/inspection/types';
 import { DEMO_DOCUMENT_ID, INSPECT_DOCUMENT_ACTION } from '../src/webmcp/inspect-document';
 import type { WebMcpInvocation } from '../src/webmcp/types';
+import { createAnankeFatesTransportFromEnvironment } from './ananke-transport';
 import { governInspectDocumentInvocation, InspectDocumentService } from './inspect-document';
 
 export type InspectDocumentHttpResult = InspectionResult | InvalidInspectionRequest;
 
 export class InspectDocumentHttpHandler {
   private readonly service: InspectDocumentService;
+  private readonly client: FatesClient;
 
-  public constructor(private readonly client = createFatesClient({ environment: 'production' })) {
+  public constructor(client?: FatesClient) {
+    this.client = client ?? createProductionFatesClient();
     this.service = new InspectDocumentService({ mode: 'production' });
   }
 
@@ -28,8 +32,21 @@ export class InspectDocumentHttpHandler {
   }
 }
 
-export function createProductionInspectDocumentHttpHandler(): InspectDocumentHttpHandler {
-  return new InspectDocumentHttpHandler();
+export function createProductionInspectDocumentHttpHandler(
+  env: NodeJS.ProcessEnv = process.env,
+  fetchImplementation: typeof fetch = fetch,
+): InspectDocumentHttpHandler {
+  return new InspectDocumentHttpHandler(createProductionFatesClient(env, fetchImplementation));
+}
+
+function createProductionFatesClient(
+  env: NodeJS.ProcessEnv = process.env,
+  fetchImplementation: typeof fetch = fetch,
+): FatesClient {
+  const transport = createAnankeFatesTransportFromEnvironment(env, fetchImplementation);
+  return transport
+    ? createFatesClient({ environment: 'production', transport })
+    : createFatesClient({ environment: 'production' });
 }
 
 function parseInvocation(payload: unknown): WebMcpInvocation | undefined {

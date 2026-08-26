@@ -36,6 +36,30 @@ export interface GovernanceEvidence {
   readonly receiptId?: string;
   readonly decisionDigest?: string;
   readonly provenance?: Readonly<Record<string, string>>;
+  readonly canonicalAction?: string;
+  readonly documentId?: string;
+  readonly expectedSha256?: string;
+  readonly purpose?: string;
+  readonly fatesRequestId?: string;
+  readonly correlationId?: string;
+  readonly canonicalRequestDigest?: string;
+  readonly authorityBindingDigest?: string;
+  readonly decisionId?: string;
+  readonly outcomeId?: string;
+  readonly auditId?: string;
+  readonly outcomeState?: string;
+  readonly policyDecision?: string;
+  readonly effectSemantics?: string;
+  readonly fatesResourceReadAttemptCount?: number;
+  readonly documentDisclosureByFates?: boolean;
+  readonly authenticatedWorkloadIdentity?: Readonly<Record<string, string>>;
+  readonly transportBinding?: Readonly<{
+    readonly canonicalAction: string;
+    readonly documentId: string;
+    readonly expectedSha256: string;
+    readonly purpose: string;
+    readonly correlationId: string;
+  }>;
 }
 
 interface GovernanceOutcomeBase {

@@ -17,7 +17,7 @@ export function InspectDocumentPanel() {
     setState({ status: 'REQUESTED', requestId });
 
     try {
-      const result = await requestInspectDocument();
+      const result = await requestInspectDocument(requestId);
       setState({ status: 'RESULT', result });
     } catch (error) {
       setState({
@@ -95,6 +95,53 @@ function InspectionResultView({ result }: { readonly result: InspectionResult })
         <div>
           <dt>Decision digest</dt>
           <dd>{result.outcome.evidence.decisionDigest ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Decision ID</dt>
+          <dd>{result.outcome.evidence.decisionId ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Outcome ID</dt>
+          <dd>{result.outcome.evidence.outcomeId ?? result.outcome.outcomeId}</dd>
+        </div>
+        <div>
+          <dt>Audit ID</dt>
+          <dd>{result.outcome.evidence.auditId ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Canonical request digest</dt>
+          <dd>{result.outcome.evidence.canonicalRequestDigest ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Authority binding digest</dt>
+          <dd>{result.outcome.evidence.authorityBindingDigest ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Fates action</dt>
+          <dd>{result.outcome.evidence.canonicalAction ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Fates request / correlation</dt>
+          <dd>
+            {result.outcome.evidence.fatesRequestId ?? '—'} /{' '}
+            {result.outcome.evidence.correlationId ?? '—'}
+          </dd>
+        </div>
+        <div>
+          <dt>Effect semantics</dt>
+          <dd>{result.outcome.evidence.effectSemantics ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Fates resource reads</dt>
+          <dd>{result.outcome.evidence.fatesResourceReadAttemptCount ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>Fates disclosure</dt>
+          <dd>
+            {result.outcome.evidence.documentDisclosureByFates === undefined
+              ? '—'
+              : String(result.outcome.evidence.documentDisclosureByFates)}
+          </dd>
         </div>
         <div>
           <dt>Mode</dt>

@@ -18,8 +18,9 @@ export default defineConfig({
 
 /**
  * Development-only host boundary. Production deployment must replace this
- * Vite middleware with an authenticated host/service boundary. The default
- * handler has no Fates transport and therefore cannot disclose the fixture.
+ * Vite middleware with an authenticated host/service boundary. When the
+ * trusted Ananke endpoint and token are absent, the handler remains
+ * unavailable and fail-closed.
  */
 function governedInspectDocumentPlugin(): Plugin {
   const handler = createProductionInspectDocumentHttpHandler();

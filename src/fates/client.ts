@@ -13,6 +13,19 @@ export interface FatesClient {
   govern(request: GovernedRequest): Promise<GovernanceOutcome>;
 }
 
+export interface FatesTransportBinding {
+  readonly canonicalAction: string;
+  readonly documentId: string;
+  readonly expectedSha256: string;
+  readonly purpose: string;
+  readonly correlationId: string;
+}
+
+export interface FatesTransportResponse {
+  readonly response: unknown;
+  readonly binding: FatesTransportBinding;
+}
+
 export interface FatesTransport {
   send(request: GovernedRequest): Promise<unknown>;
 }
@@ -65,6 +78,11 @@ export function snapshotGovernedRequest(request: GovernedRequest): GovernedReque
 }
 
 export function parseFatesOutcome(raw: unknown, requestId: string): GovernanceOutcome {
+  const transportResponse = parseTransportResponse(raw);
+  if (transportResponse) {
+    return parseAnankeOutcome(transportResponse.response, requestId, transportResponse.binding);
+  }
+
   if (!isRecord(raw) || raw.requestId !== requestId || typeof raw.status !== 'string') {
     return unknownOutcome(requestId, 'MALFORMED_FATES_RESPONSE');
   }
@@ -130,6 +148,134 @@ export function parseFatesOutcome(raw: unknown, requestId: string): GovernanceOu
   }
 }
 
+function parseTransportResponse(value: unknown): FatesTransportResponse | undefined {
+  if (!isRecord(value) || !isRecord(value.binding) || !('response' in value)) {
+    return undefined;
+  }
+
+  const binding = value.binding;
+  const canonicalAction = stringValue(binding.canonicalAction);
+  const documentId = stringValue(binding.documentId);
+  const expectedSha256 = stringValue(binding.expectedSha256);
+  const purpose = stringValue(binding.purpose);
+  const correlationId = stringValue(binding.correlationId);
+  if (!canonicalAction || !documentId || !expectedSha256 || !purpose || !correlationId) {
+    return undefined;
+  }
+
+  return {
+    response: value.response,
+    binding: { canonicalAction, documentId, expectedSha256, purpose, correlationId },
+  };
+}
+
+function parseAnankeOutcome(
+  raw: unknown,
+  requestId: string,
+  transportBinding?: FatesTransportBinding,
+): GovernanceOutcome {
+  if (!isRecord(raw) || !isRecord(raw.outcome) || !isRecord(raw.evidence)) {
+    return unknownOutcome(requestId, 'MALFORMED_FATES_RESPONSE');
+  }
+
+  const outcomeState = stringValue(raw.outcome.state);
+  const evidence = parseAnankeEvidence(raw.evidence, outcomeState, transportBinding);
+  if (!outcomeState || !evidence) {
+    return unknownOutcome(requestId, 'UNVERIFIABLE_FATES_EVIDENCE');
+  }
+
+  const outcomeId = evidence.outcomeId ?? evidence.evidenceId;
+  if (!outcomeId) {
+    return unknownOutcome(requestId, 'MALFORMED_FATES_OUTCOME_ID');
+  }
+
+  const base = { requestId, outcomeId, evidence };
+  switch (outcomeState) {
+    case 'COMPLETED':
+      return raw.evidence.authorizationDecision === 'ALLOW' && evidence.policyDecision === 'ALLOW'
+        ? { ...base, status: 'ALLOWED' }
+        : unknownOutcome(requestId, 'UNVERIFIABLE_FATES_DECISION');
+    case 'DENIED':
+      return {
+        ...base,
+        status: 'DENIED',
+        reasonCode: stringValue(raw.outcome.reasonCode) ?? 'FATES_DENIED',
+      };
+    case 'WAITING_FOR_APPROVAL': {
+      const bindingId = stringValue(raw.approvalGrantId);
+      return bindingId
+        ? { ...base, status: 'REQUIRES_APPROVAL', approvalBinding: { bindingId } }
+        : unknownOutcome(requestId, 'MALFORMED_APPROVAL_BINDING');
+    }
+    case 'FAILED':
+    case 'TIMED_OUT':
+    case 'STALE_STATE':
+    case 'APPROVAL_INVALIDATED':
+    case 'PARTIAL_SUCCESS':
+      return {
+        ...base,
+        status: 'FAILED',
+        errorCode: stringValue(raw.outcome.reasonCode) ?? 'FATES_EXECUTION_FAILED',
+        retryable: raw.outcome.retryable === true,
+      };
+    default:
+      return unknownOutcome(requestId, 'UNRECOGNISED_FATES_STATUS');
+  }
+}
+
+function parseAnankeEvidence(
+  value: Record<string, unknown>,
+  outcomeState: string | undefined,
+  transportBinding: FatesTransportBinding | undefined,
+): GovernanceEvidence | undefined {
+  const outcomeId = stringValue(value.outcomeId);
+  const decisionId = stringValue(value.decisionId);
+  const evidenceId = outcomeId ?? decisionId;
+  if (!evidenceId) {
+    return undefined;
+  }
+
+  const canonicalRequestDigest = stringValue(value.canonicalRequestDigest);
+  const authorityBindingDigest = stringValue(value.authorityBindingDigest);
+  const authenticatedWorkloadIdentity = stringRecord(value.authenticatedWorkloadIdentity);
+  const provenance: Record<string, string> = { runtime: 'ananke' };
+  for (const key of ['routeState', 'dispatchState', 'policyVersion']) {
+    const item = stringValue(value[key]);
+    if (item) provenance[key] = item;
+  }
+
+  return {
+    evidenceId,
+    source: 'fates',
+    authority: 'authoritative',
+    canonicalAction: stringValue(value.action),
+    documentId: stringValue(value.documentId),
+    expectedSha256: stringValue(value.expectedSha256),
+    purpose: transportBinding?.purpose ?? stringValue(value.purpose),
+    fatesRequestId: stringValue(value.requestId),
+    correlationId: stringValue(value.correlationId),
+    canonicalRequestDigest,
+    authorityBindingDigest,
+    decisionId,
+    outcomeId,
+    auditId: stringValue(value.auditId),
+    outcomeState,
+    policyDecision: stringValue(value.policyDecision),
+    effectSemantics: stringValue(value.effectSemantics),
+    fatesResourceReadAttemptCount:
+      typeof value.fatesResourceReadAttemptCount === 'number'
+        ? value.fatesResourceReadAttemptCount
+        : undefined,
+    documentDisclosureByFates:
+      typeof value.documentDisclosureByFates === 'boolean'
+        ? value.documentDisclosureByFates
+        : undefined,
+    authenticatedWorkloadIdentity,
+    provenance,
+    ...(transportBinding ? { transportBinding } : {}),
+  };
+}
+
 function parseEvidence(value: unknown): GovernanceEvidence | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -186,6 +332,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function stringRecord(value: unknown): Readonly<Record<string, string>> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const entries = Object.entries(value);
+  if (entries.some(([, item]) => typeof item !== 'string')) {
+    return undefined;
+  }
+  return Object.fromEntries(entries) as Readonly<Record<string, string>>;
 }
 
 function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {

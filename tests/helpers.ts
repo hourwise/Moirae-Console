@@ -1,5 +1,11 @@
 import { syntheticEvidence } from '../src/fates/fake-client';
 import type { GovernanceOutcome, GovernanceStatus, GovernedRequest } from '../src/fates/types';
+import {
+  MOIRAE_AUTHORITY_BINDING,
+  MOIRAE_FATES_CANONICAL_REQUEST_DIGEST,
+  MOIRAE_FATES_EXPECTED_SHA256,
+  MOIRAE_FATES_PURPOSE,
+} from '../server/moirae-authority';
 
 export const request: GovernedRequest = {
   requestId: 'request-test-001',
@@ -60,8 +66,30 @@ export function authoritativeAllowedOutcome(requestId = request.requestId): Gove
       evidenceId: 'fates-evidence-test-001',
       source: 'fates',
       authority: 'authoritative',
-      receiptId: 'fates-receipt-test-001',
-      decisionDigest: 'fates-digest-test-001',
+      canonicalAction: MOIRAE_AUTHORITY_BINDING.canonicalAction,
+      documentId: MOIRAE_AUTHORITY_BINDING.documentId,
+      expectedSha256: MOIRAE_FATES_EXPECTED_SHA256,
+      purpose: MOIRAE_FATES_PURPOSE,
+      fatesRequestId: 'ananke-request-test-001',
+      correlationId: requestId,
+      canonicalRequestDigest: MOIRAE_FATES_CANONICAL_REQUEST_DIGEST,
+      authorityBindingDigest: 'b'.repeat(64),
+      decisionId: 'decision-test-001',
+      outcomeId: 'fates-outcome-test-001',
+      auditId: 'audit-test-001',
+      outcomeState: 'COMPLETED',
+      policyDecision: 'ALLOW',
+      effectSemantics: 'AUTHORIZATION_ONLY_NO_RESOURCE_READ',
+      fatesResourceReadAttemptCount: 0,
+      documentDisclosureByFates: false,
+      authenticatedWorkloadIdentity: {
+        authenticatedPrincipalId: 'moirae-console-host',
+        actingPrincipalId: 'moirae-document-inspection-agent',
+      },
+      transportBinding: {
+        ...MOIRAE_AUTHORITY_BINDING,
+        correlationId: requestId,
+      },
     },
   };
 }

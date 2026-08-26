@@ -28,19 +28,21 @@ direct WebMCP-to-side-effect path and no governed mutation implementation.
 
 ## Current state
 
-This repository is at the **MC-01 first governed read-only disclosure stage**:
+This repository is at the **MC-02 live authoritative read-only disclosure stage**:
 
 - pre-production;
 - private development repository;
-- independently buildable and testable with a deterministic synthetic governance provider;
+- independently buildable and testable with deterministic synthetic tests plus a host-only Ananke transport;
 - no production deployment;
 - no containment or security-complete claim;
-- one bounded, read-only `inspect_document` demonstration path;
+- one bounded, read-only `inspect_document` demonstration path with exact digest verification;
 - no final WebMCP challenge workflow.
 
-The MC-01 demonstration uses a fixed host-side fixture and keeps production Fates transport
-unavailable/fail-closed until a separately approved integration is available. Mutation,
-approval, and destructive workflows are later slices and are not implemented here.
+The MC-02 demonstration uses a fixed host-side fixture and the canonical Ananke authority action
+`fates.moirae.inspect-document.v1`. Configure `ANANKE_MOIRAE_EXECUTION_TOKEN` only in the
+trusted host environment; missing or invalid transport remains fail-closed. Fates authorizes
+the exact resource and digest but does not read the fixture. Mutation, approval, and destructive
+workflows are later slices and are not implemented here.
 
 ## Development
 

@@ -18,6 +18,10 @@ import { InspectDocumentHttpHandler } from '../../server/http-handler';
 import { request, syntheticOutcome, authoritativeAllowedOutcome } from '../helpers';
 
 const canary = 'MC01-PROTECTED-DOCUMENT-CANARY-9f4c2d7a';
+const fixtureBytes = new Uint8Array(
+  readFileSync(join(process.cwd(), 'server', 'fixtures', 'demo-policy-001.txt')),
+);
+const fixtureContent = Buffer.from(fixtureBytes).toString('utf8');
 
 const invocation = {
   requestId: 'request-mc01-001',
@@ -88,7 +92,11 @@ describe('MC-01 governed inspect_document disclosure', () => {
   });
 
   it('MC-01-T04: an authoritative ALLOWED outcome discloses exactly the governed document', async () => {
-    const read = vi.fn(async (documentId: string) => ({ documentId, content: canary }));
+    const read = vi.fn(async (documentId: string) => ({
+      documentId,
+      content: fixtureContent,
+      bytes: fixtureBytes,
+    }));
     const client: FatesClient = {
       govern: async (requestValue) => authoritativeAllowedOutcome(requestValue.requestId),
     };
@@ -100,7 +108,7 @@ describe('MC-01 governed inspect_document disclosure', () => {
 
     expect(read).toHaveBeenCalledWith(DEMO_DOCUMENT_ID);
     expect(result.disclosure).toEqual({ state: 'DISCLOSED', evidenceMode: 'AUTHORITATIVE' });
-    expect(result.document).toEqual({ documentId: DEMO_DOCUMENT_ID, content: canary });
+    expect(result.document).toEqual({ documentId: DEMO_DOCUMENT_ID, content: fixtureContent });
     expect(result.phases.map((phase) => phase.name)).toEqual([
       'REQUESTED',
       'IDENTIFIED',
@@ -174,7 +182,11 @@ describe('MC-01 governed inspect_document disclosure', () => {
     });
     argumentsValue.documentId = '../../server/fixtures/other.txt';
     const governed = await promise;
-    const read = vi.fn(async (documentId: string) => ({ documentId, content: canary }));
+    const read = vi.fn(async (documentId: string) => ({
+      documentId,
+      content: fixtureContent,
+      bytes: fixtureBytes,
+    }));
     const result = await new InspectDocumentService({
       mode: 'production',
       documentSource: { read },

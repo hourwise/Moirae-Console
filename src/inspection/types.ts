@@ -20,6 +20,8 @@ export interface InspectionResult {
   readonly request: GovernedRequest;
   readonly outcome: GovernanceOutcome;
   readonly phases: readonly LifecyclePhase[];
+  /** Host-side read attempts; this is never a Fates read count. */
+  readonly hostDocumentReadCount?: number;
   readonly disclosure: {
     readonly state: 'DISCLOSED' | 'NOT_DISCLOSED';
     readonly evidenceMode: 'AUTHORITATIVE' | 'SYNTHETIC_TEST_ONLY' | 'UNVERIFIED';

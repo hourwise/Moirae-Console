@@ -13,7 +13,7 @@ discover
   → execute only if authorised
 ```
 
-In MC-01 the route reaches one explicit host-side disclosure gate. The adapter in
+In MC-02 the route reaches one explicit host-side disclosure gate. The adapter in
 `src/webmcp/adapter.ts` has no document-source callback and no direct database, filesystem,
 or external mutation path:
 
@@ -24,11 +24,16 @@ input/tool validation
       ↓
 immutable governed request snapshot
       ↓
-Console Fates client
+trusted host adapter
       ↓
-authoritative outcome or NO DISCLOSURE error state
+authenticated `POST /api/execute`
       ↓
-fixed host-side document source only when `mayDisclose(...)` is true
+canonical Fates action `fates.moirae.inspect-document.v1`
+      ↓
+authoritative ALLOW evidence or NO DISCLOSURE error state
+      ↓
+fixed host-side document source only when `mayDisclose(...)` is true and its bytes match
+the authorized SHA-256
 ```
 
 The experimental nature of WebMCP means its discovery and registration behaviour must remain
@@ -37,18 +42,17 @@ context, candidate binding, idempotency, replay protection, or freshness rules.
 
 Read/disclosure is an effect for governance purposes. The protected demonstration fixture is
 not part of browser assets, and the browser cannot address the fixture by path or URL. Tool
-discovery and tool invocation do not confer permission. `REQUIRES_APPROVAL` is not executable
-in MC-01 because approval is not implemented.
+discovery does not call Ananke, and tool invocation does not itself confer permission. The
+browser cannot choose the Fates action, expected digest, purpose, endpoint, or credential.
+`REQUIRES_APPROVAL` is not executable because approval is not implemented. Fates' completed
+transaction is explicitly authorization-only; the Console host owns the later document read.
 
 ## Future slices
 
-| Slice | Intended action       | Boundary                       |
-| ----- | --------------------- | ------------------------------ |
-| MC-01 | `inspect_document`    | read-only governed action      |
-| MC-02 | `publish_document`    | governed mutation              |
-| MC-03 | `publish_document`    | exact-operation human approval |
-| MC-04 | destructive operation | hard denial and no effect      |
+| Slice | Intended action    | Boundary                      |
+| ----- | ------------------ | ----------------------------- |
+| MC-01 | `inspect_document` | bounded disclosure prototype  |
+| MC-02 | `inspect_document` | live authoritative transport  |
+| MC-03 | separate operation | exact scope and effect design |
 
-The eventual demonstration may show `READ → ALLOW`, `PUBLISH → APPROVAL`, and
-`DELETE → DENY`, but mutation, approval, and destructive challenge workflows are not
-implemented in MC-01.
+No mutation, approval, or destructive challenge workflow is implemented in MC-02.

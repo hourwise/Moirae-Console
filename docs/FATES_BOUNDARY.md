@@ -77,14 +77,37 @@ must not manufacture receipts, upgrade decisions, or use a fake provider in prod
 Raw local evidence is intentionally not duplicated here. The upstream closure is provenance,
 not a second evidence archive.
 
-## MC-01 transport status
+## MC-02 transport status
 
-MC-01 did **not** exercise a live authoritative Fates transport. It uses the bounded synthetic
-provider for deterministic tests and an explicit authoritative-shaped test outcome to verify
-the disclosure predicate. That outcome is not a live Fates receipt.
+MC-02 uses the real canonical Ananke transport for live mode. The Console host sends an
+authenticated `POST /api/execute` request using the host-only
+`ANANKE_MOIRAE_EXECUTION_TOKEN` and the fixed logical operation:
 
-The default host-side handler constructs a production `FatesClient` without a transport. In
-that mode Fates is unavailable, the request becomes `FAILED`, and the fixed document is not
-read or disclosed. Synthetic evidence is labelled `SYNTHETIC_TEST_ONLY` and cannot satisfy the
-production disclosure predicate. An explicitly selected `synthetic-demo` service mode exists
-only for local tests and is not production authority.
+```text
+inspect_document
+  → fates.moirae.inspect-document.v1
+  → documentId=demo-policy-001
+  → expectedSha256=f00d46e0cb81f67ed7a3d516939bd86ce5401e6c01321dbc90ca3374899a2d6c
+  → purpose=moirae.document-inspection
+```
+
+The canonical Ananke and Integration mainline checkpoints for this slice are recorded in the
+MC-02 report. The historical accepted Integration evidence commit remains separate from its
+mainline transplant.
+
+The Ananke outcome is authority-only: Fates does not possess, read, or return the protected
+Moirae fixture. Before disclosure the Console validates the canonical action, fixed resource,
+expected digest, purpose binding, authenticated workload provenance, request/correlation
+identity, canonical and authority-binding digests, decision/outcome/audit identifiers,
+`COMPLETED`/`ALLOW`, `AUTHORIZATION_ONLY_NO_RESOURCE_READ`, zero Fates reads, and no Fates
+disclosure. It then reads its own fixed bytes, hashes those same bytes, and discloses only on
+exact equality.
+
+Synthetic providers remain available only to deterministic tests and explicit
+`synthetic-demo` tests. Synthetic evidence cannot satisfy the production predicate, and a live
+configuration failure becomes unavailable/fail-closed rather than selecting a fake provider.
+
+The Vite middleware is demonstration-only. A production deployment must replace it with an
+authenticated host/service boundary, secret custody, endpoint controls, response cache policy,
+TLS/service identity, and operational timeout/replay controls. No browser JavaScript receives
+the token or direct access to Ananke.
