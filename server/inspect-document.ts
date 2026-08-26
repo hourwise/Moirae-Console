@@ -67,7 +67,7 @@ export class InspectDocumentService {
         disclosure: {
           state: 'NOT_DISCLOSED',
           evidenceMode,
-          reasonCode: reasonForNoDisclosure(outcome, snapshot),
+          reasonCode: reasonForNoDisclosure(outcome, snapshot, nowMs),
         },
       };
     }
@@ -339,7 +339,11 @@ function evidenceModeFor(
   return 'UNVERIFIED';
 }
 
-function reasonForNoDisclosure(outcome: GovernanceOutcome, request: GovernedRequest): string {
+function reasonForNoDisclosure(
+  outcome: GovernanceOutcome,
+  request: GovernedRequest,
+  nowMs = Date.now(),
+): string {
   if (outcome.requestId !== request.requestId) {
     return 'REQUEST_ID_MISMATCH';
   }
@@ -357,7 +361,7 @@ function reasonForNoDisclosure(outcome: GovernanceOutcome, request: GovernedRequ
   }
   if (outcome.status === 'ALLOWED') {
     const expiresAtMs = Date.parse(outcome.evidence.expiresAt ?? '');
-    if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+    if (Number.isFinite(expiresAtMs) && expiresAtMs <= nowMs) {
       return 'STALE_AUTHORITY';
     }
     return 'UNVERIFIABLE_AUTHORIZATION';
