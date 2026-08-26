@@ -42,9 +42,18 @@
     }
   ],
   "notRequiredForChallengeRuntime": [
-    { "repository": "https://github.com/hourwise/Project-Mnemosyne", "sha": "24f8541ce0e0a2f56171544a249cff56e7b634d1" },
-    { "repository": "https://github.com/hourwise/Project-Horae", "sha": "3a174b3f1bf791b437a22b4cfd41bf9677b9cba9" },
-    { "repository": "https://github.com/hourwise/Project-Moirae-Code", "sha": "b23f723fc5267c95fe9f7eccb2efa32465f8d2f1" }
+    {
+      "repository": "https://github.com/hourwise/Project-Mnemosyne",
+      "sha": "24f8541ce0e0a2f56171544a249cff56e7b634d1"
+    },
+    {
+      "repository": "https://github.com/hourwise/Project-Horae",
+      "sha": "3a174b3f1bf791b437a22b4cfd41bf9677b9cba9"
+    },
+    {
+      "repository": "https://github.com/hourwise/Project-Moirae-Code",
+      "sha": "b23f723fc5267c95fe9f7eccb2efa32465f8d2f1"
+    }
   ],
   "buildOrder": [
     "Build Project-Adrasteia/runtime contracts from the reviewed source or reviewed deterministic artifact.",

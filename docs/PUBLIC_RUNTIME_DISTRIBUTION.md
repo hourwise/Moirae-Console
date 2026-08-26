@@ -27,11 +27,11 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 
 ## Required source set
 
-| Component | Exact source checkpoint | Runtime role | Current source status |
-| --- | --- | --- | --- |
-| Moirae Console | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus this document commit | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Local source is present; public visibility is not authorized |
-| Project Ananke | `693b386218e73afaa579cb6457f054007293581b` plus MC-10 license branch `0afd16a` | Canonical authenticated Fates HTTP authority | Required; source repository is currently private |
-| Project-Adrasteia / Runtime Contracts | `6aba3ef466a16292689d4afaf9f9bc40dc013301` | Runtime contract package consumed by Ananke | Required; source repository and release are currently private |
+| Component                             | Exact source checkpoint                                                        | Runtime role                                                       | Current source status                                         |
+| ------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Moirae Console                        | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus this document commit           | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Local source is present; public visibility is not authorized  |
+| Project Ananke                        | `693b386218e73afaa579cb6457f054007293581b` plus MC-10 license branch `0afd16a` | Canonical authenticated Fates HTTP authority                       | Required; source repository is currently private              |
+| Project-Adrasteia / Runtime Contracts | `6aba3ef466a16292689d4afaf9f9bc40dc013301`                                     | Runtime contract package consumed by Ananke                        | Required; source repository and release are currently private |
 
 The Console commit is the accepted MC-09 remediation checkpoint. The final
 Console SHA for this documentation change is recorded in the commit and
@@ -42,12 +42,12 @@ manifest after commit creation.
 These accepted Fates repositories were not found in the imports, workspace
 dependencies, or live server startup path for this bounded demonstration:
 
-| Repository | Classification | Reason |
-| --- | --- | --- |
-| Project-Fates-Integration | TEST/EVIDENCE ONLY | Compatibility and evidence files; not imported or installed by Console or Ananke runtime startup |
-| Mnemosyne | NOT REQUIRED FOR CHALLENGE DISTRIBUTION | No import or package dependency in the Console → Ananke authority path |
-| Horae | NOT REQUIRED FOR CHALLENGE DISTRIBUTION | No import or package dependency in the Console → Ananke authority path |
-| Moirae Code | NOT REQUIRED FOR CHALLENGE DISTRIBUTION | No import or package dependency in the Console → Ananke authority path |
+| Repository                | Classification                          | Reason                                                                                           |
+| ------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Project-Fates-Integration | TEST/EVIDENCE ONLY                      | Compatibility and evidence files; not imported or installed by Console or Ananke runtime startup |
+| Mnemosyne                 | NOT REQUIRED FOR CHALLENGE DISTRIBUTION | No import or package dependency in the Console → Ananke authority path                           |
+| Horae                     | NOT REQUIRED FOR CHALLENGE DISTRIBUTION | No import or package dependency in the Console → Ananke authority path                           |
+| Moirae Code               | NOT REQUIRED FOR CHALLENGE DISTRIBUTION | No import or package dependency in the Console → Ananke authority path                           |
 
 Their accepted checkpoints remain frozen and untouched. Their source is not
 silently represented as part of the minimum public runtime.
