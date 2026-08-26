@@ -19,6 +19,7 @@ export interface FatesTransportBinding {
   readonly expectedSha256: string;
   readonly purpose: string;
   readonly correlationId: string;
+  readonly destinationId?: string;
 }
 
 export interface FatesTransportResponse {
@@ -165,7 +166,16 @@ function parseTransportResponse(value: unknown): FatesTransportResponse | undefi
 
   return {
     response: value.response,
-    binding: { canonicalAction, documentId, expectedSha256, purpose, correlationId },
+    binding: {
+      canonicalAction,
+      documentId,
+      expectedSha256,
+      purpose,
+      correlationId,
+      ...(stringValue(binding.destinationId)
+        ? { destinationId: stringValue(binding.destinationId) }
+        : {}),
+    },
   };
 }
 
@@ -251,6 +261,7 @@ function parseAnankeEvidence(
     canonicalAction: stringValue(value.action),
     documentId: stringValue(value.documentId),
     expectedSha256: stringValue(value.expectedSha256),
+    destinationId: stringValue(value.destinationId),
     purpose: transportBinding?.purpose ?? stringValue(value.purpose),
     fatesRequestId: stringValue(value.requestId),
     correlationId: stringValue(value.correlationId),
@@ -274,9 +285,17 @@ function parseAnankeEvidence(
       typeof value.fatesResourceReadAttemptCount === 'number'
         ? value.fatesResourceReadAttemptCount
         : undefined,
+    fatesPublicationAttemptCount:
+      typeof value.fatesPublicationAttemptCount === 'number'
+        ? value.fatesPublicationAttemptCount
+        : undefined,
     documentDisclosureByFates:
       typeof value.documentDisclosureByFates === 'boolean'
         ? value.documentDisclosureByFates
+        : undefined,
+    documentPublicationByFates:
+      typeof value.documentPublicationByFates === 'boolean'
+        ? value.documentPublicationByFates
         : undefined,
     authenticatedWorkloadIdentity,
     provenance,

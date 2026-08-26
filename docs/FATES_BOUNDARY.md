@@ -142,3 +142,36 @@ AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY
 The in-memory Console consumption store is not restart-persistent. Cross-restart replay
 protection, durable receipt retention, TLS/service identity, and operational monitoring remain
 deployment work and are not claimed by MC-03.
+
+## MC-04 publication authority
+
+MC-04 adds the distinct canonical action `fates.moirae.publish-document.v1` for the external
+`publish_document` proposal. It is not an alias for `fates.moirae.inspect-document.v1` or the
+historical Slice 02 action. The exact bounded authority parameters are:
+
+```text
+documentId:     demo-policy-001
+expectedSha256: f00d46e0cb81f67ed7a3d516939bd86ce5401e6c01321dbc90ca3374899a2d6c
+destinationId:  moirae.demo-publication-slot.v1
+purpose:        moirae.document-publication
+```
+
+Ananke uses a separate host workload profile and `ANANKE_MOIRAE_PUBLISH_TOKEN`, scoped to the
+fixed document, `publish` operation, and fixed destination. The inspection credential is not
+widened. The trusted host calls the existing authenticated `POST /api/execute` endpoint; no
+browser route calls Ananke directly.
+
+Fates remains authority-only. The publication action is registered as `READ_ONLY` in Ananke
+because Ananke performs no resource read or mutation. Its explicit effect semantic is
+`AUTHORIZATION_ONLY_NO_PUBLICATION`, with `fatesResourceReadAttemptCount=0`,
+`fatesPublicationAttemptCount=0`, and `documentPublicationByFates=false`. `COMPLETED` means
+the Fates governance transaction completed, not that the document was published. Moirae
+independently reads its fixed source bytes, hashes those same bytes, and performs the one fixed
+host-side atomic publication only after exact authoritative evidence passes.
+
+The MC-04 guarantee remains `AUTHENTICATED_TRANSPORT_BOUND_AUTHORITY`: canonical request,
+authority-binding, and receipt digests are verified over authenticated transport, but no
+cryptographically signed receipt is claimed. Fates replay state and the Console receipt store
+remain the accepted MC-03 process-local demonstration mechanisms. The publication file store
+is also demonstration-only; durable cross-restart effect reconciliation, TLS/service identity,
+operational monitoring, and deployment hardening remain release work.

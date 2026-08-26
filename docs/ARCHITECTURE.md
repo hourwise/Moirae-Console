@@ -121,3 +121,43 @@ MC-03 hardens the existing live authoritative transport for one fixed read-only
 explicitly authorized operation, but it must not reuse this demonstration fixture boundary as a
 general document store or treat an
 authorization-only Fates outcome as a document read.
+
+## MC-04 bounded publication
+
+MC-04 adds one separate mutation proposal without changing `inspect_document`:
+
+```text
+WebMCP publish_document
+          │  documentId=demo-policy-001 only
+          ▼
+immutable Console request snapshot
+          ▼
+trusted host publication adapter
+          │  injects action, digest, purpose, destination, and host credential
+          ▼
+authenticated Ananke POST /api/execute
+          │  fates.moirae.publish-document.v1
+          ▼
+fresh one-use Fates authority
+          │  AUTHORIZATION_ONLY_NO_PUBLICATION
+          ▼
+Console reads fixed source bytes once
+          ▼
+SHA-256 matches Fates-authorized digest
+          ▼
+fixed host-only atomic publication store
+          ▼
+bounded publication evidence and no-store response
+```
+
+The Fates action is registered as `READ_ONLY` because Ananke itself performs no resource read
+or publication. Its explicit `authorization-only-no-publication` semantic authorizes a
+downstream Moirae effect without falsely recording that Fates performed that effect. The
+Console publication store is a fixed demonstration target; it does not accept a caller path,
+URL, destination, filename, upload, or content value. Existing identical bytes are an
+idempotent result and different bytes are a destination conflict.
+
+The publication workload profile is separate from the inspection profile and is scoped to the
+fixed document, `publish` operation, and `moirae.demo-publication-slot.v1` destination. The
+publication credential is host-only. This Vite middleware and file store remain demonstration
+composition and are not a production deployment boundary.

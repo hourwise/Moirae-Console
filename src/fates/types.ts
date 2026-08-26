@@ -39,6 +39,7 @@ export interface GovernanceEvidence {
   readonly canonicalAction?: string;
   readonly documentId?: string;
   readonly expectedSha256?: string;
+  readonly destinationId?: string;
   readonly purpose?: string;
   readonly fatesRequestId?: string;
   readonly correlationId?: string;
@@ -58,7 +59,9 @@ export interface GovernanceEvidence {
   readonly policyDecision?: string;
   readonly effectSemantics?: string;
   readonly fatesResourceReadAttemptCount?: number;
+  readonly fatesPublicationAttemptCount?: number;
   readonly documentDisclosureByFates?: boolean;
+  readonly documentPublicationByFates?: boolean;
   readonly authenticatedWorkloadIdentity?: Readonly<Record<string, string>>;
   readonly transportBinding?: Readonly<{
     readonly canonicalAction: string;
@@ -66,6 +69,7 @@ export interface GovernanceEvidence {
     readonly expectedSha256: string;
     readonly purpose: string;
     readonly correlationId: string;
+    readonly destinationId?: string;
   }>;
 }
 

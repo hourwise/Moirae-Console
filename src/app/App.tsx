@@ -1,4 +1,5 @@
 import { InspectDocumentPanel } from './InspectDocumentPanel';
+import { PublishDocumentPanel } from './PublishDocumentPanel';
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
         </p>
       </section>
       <InspectDocumentPanel />
+      <PublishDocumentPanel />
     </main>
   );
 }

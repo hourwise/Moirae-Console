@@ -6,7 +6,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 
-import { createProductionInspectDocumentHttpHandler } from './server/http-handler';
+import {
+  createProductionInspectDocumentHttpHandler,
+  createProductionPublishDocumentHttpHandler,
+} from './server/http-handler';
 import { setNoStoreResponseHeaders } from './server/http-response';
 
 export default defineConfig({
@@ -25,6 +28,7 @@ export default defineConfig({
  */
 function governedInspectDocumentPlugin(): Plugin {
   const handler = createProductionInspectDocumentHttpHandler();
+  const publicationHandler = createProductionPublishDocumentHttpHandler();
 
   return {
     name: 'moirae-governed-inspect-document',
@@ -49,6 +53,36 @@ function governedInspectDocumentPlugin(): Plugin {
 
         void readJsonBody(request)
           .then((payload) => handler.handle(payload))
+          .then((result) => sendJson(response, result))
+          .catch(() =>
+            sendJson(response, { error: 'BAD_REQUEST', reasonCode: 'INVALID_JSON' }, 400),
+          );
+      });
+
+      server.middlewares.use('/api/publish-document/status', (request, response) => {
+        if (request.method !== 'GET') {
+          response.statusCode = 405;
+          response.setHeader('Allow', 'GET');
+          response.end();
+          return;
+        }
+
+        void publicationHandler
+          .status()
+          .then((result) => sendJson(response, result))
+          .catch(() => sendJson(response, { error: 'PUBLICATION_STATUS_UNAVAILABLE' }, 503));
+      });
+
+      server.middlewares.use('/api/publish-document', (request, response) => {
+        if (request.method !== 'POST') {
+          response.statusCode = 405;
+          response.setHeader('Allow', 'POST');
+          response.end();
+          return;
+        }
+
+        void readJsonBody(request)
+          .then((payload) => publicationHandler.handle(payload))
           .then((result) => sendJson(response, result))
           .catch(() =>
             sendJson(response, { error: 'BAD_REQUEST', reasonCode: 'INVALID_JSON' }, 400),
