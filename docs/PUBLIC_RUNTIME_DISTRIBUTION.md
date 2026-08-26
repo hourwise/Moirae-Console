@@ -1,6 +1,6 @@
-# MC-10 public runtime distribution
+# MC-11 public runtime distribution
 
-Status: **blocked pending public source and artifact provenance approval**.
+Status: **source-pinned; pending repository visibility and full public clean-room execution**.
 
 This document records the smallest source graph needed to run the real
 hackathon authority path. It is a release-preparation document; it does not
@@ -30,8 +30,8 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 | Component                             | Exact source checkpoint                                                                                                 | Runtime role                                                       | Current source status                                         |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
 | Moirae Console                        | `0434c7b8e73b41c175a0b0fb3998f9c5cf4552de` plus this document commit                                                    | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Local source is present; public visibility is not authorized  |
-| Project Ananke                        | `0afd16ac3827c568bf3d3a4affcaf85ada7800b2` (license-corrected; runtime base `693b386218e73afaa579cb6457f054007293581b`) | Canonical authenticated Fates HTTP authority                       | Required; source repository is currently private              |
-| Project-Adrasteia / Runtime Contracts | `6aba3ef466a16292689d4afaf9f9bc40dc013301`                                                                              | Runtime contract package consumed by Ananke                        | Required; source repository and release are currently private |
+| Project Ananke                        | `5fa868b8bf1ed2f76bcf6427efc5ccf5f09939f0` (runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Required; source repository is currently private |
+| Project-Adrasteia / Runtime Contracts | `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`) | Runtime contract package consumed by Ananke | Required; source repository is currently private |
 
 The Console commit is the accepted MC-09 remediation checkpoint. The
 distribution documents are additional review material on the bounded MC-09
@@ -54,35 +54,42 @@ silently represented as part of the minimum public runtime.
 
 ## Consumption and provenance
 
-Ananke consumes the contract package through the exact lockfile URL:
+Ananke consumes the contract package through this exact HTTPS Git source pin:
 
 ```text
-https://github.com/hourwise/Project-Adrasteia/releases/download/
-adrasteia-preflight-v0.6.2-protocol-1.4.0/project-runtime-contracts-0.6.2.tgz
+git+https://github.com/hourwise/Project-Adrasteia.git#
+a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
 ```
 
-The lockfile records package version `0.6.2`, MIT metadata, and the exact
-integrity value. The accepted Runtime Contracts source checkpoint is tagged
-`adrasteia-preflight-v0.6.2-protocol-1.4.0` and builds a package with the
-expected 199-file package shape.
+The Project-Adrasteia package has an npm `prepare` hook which builds `dist`
+from source during Git installation. The lockfile records the exact source
+pin and generated package integrity. The old private release URL is no longer
+in the active Ananke dependency path.
 
-The clean source build and the downloaded release artifact are not currently
-byte-for-byte identical: the archive contents differ only in line endings in
-`package/LICENSE` and `package/package.json` (LF in the source build versus
-CRLF in the released artifact). This is an artifact reproducibility defect to
-resolve before claiming a source-only public build. No private artifact is
-silently substituted in this release candidate.
+Two independent clean builds from the packaging-correction source commit
+produced identical 199-file package contents and archive SHA-256:
+
+```text
+AAB38EA052AFA8C5230932510DEFB0610B96B1000EAF12A9BE55936D46B6EB40
+```
+
+Two independent clean builds from the original reviewed `6aba3ef...` source
+also produced identical 199-file contents. The historical private artifact
+is not used by the new release path and remains historical evidence only:
+
+```text
+HISTORICAL_PRIVATE_ARTIFACT_NOT_USED_BY_PUBLIC_RELEASE
+```
 
 ## License and package policy
 
 - Console: Apache-2.0.
-- Ananke: MIT is declared by project history and README; MC-10 adds the
-  standard root MIT `LICENSE` on the separate provenance branch. The package
-  remains `private: true`, intentionally; source distribution does not require
-  npm publication.
-- Project-Adrasteia / Runtime Contracts: MIT in the accepted source package and
-  root license. The package author field is empty; ownership/provenance should
-  be reviewed before public publication.
+- Ananke: MIT is declared by project history and README; the source-pinned
+  branch contains the standard root MIT `LICENSE`. The package remains
+  `private: true`, intentionally; source distribution does not require npm
+  publication.
+- Project-Adrasteia / Runtime Contracts: MIT in the source package and root
+  license. The package author field remains empty; no value was invented.
 - Registry runtime packages used by Ananke include MIT packages (`hono`,
   `@hono/node-server`, `better-sqlite3`, `jose`, `zod`) and the ISC
   `zod-to-json-schema` package. Their lockfile versions and integrity values
@@ -96,12 +103,18 @@ Apache-2.0 merely because Console is Apache-2.0.
 
 The intended source-only distribution is Option A: public Console plus the
 minimum public Ananke and Project-Adrasteia source repositories, each pinned
-to the reviewed checkpoint or a reviewed reproducible release artifact.
+to the reviewed source commits.
 
 ```text
-# In the documented public source checkouts
+# Project-Adrasteia at a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
 npm ci --no-audit --no-fund
 npm run build
+
+# Project Ananke at 5fa868b8bf1ed2f76bcf6427efc5ccf5f09939f0
+npm ci --no-audit --no-fund
+npm run verify:adrasteia-source
+npm run build
+npm test
 
 # Start Ananke's real runtime-core HTTP service with server-side credentials.
 # Then, in the Console checkout:
@@ -118,19 +131,18 @@ to browser JavaScript.
 
 ## Current gate result
 
-The minimum graph is not yet publicly reproducible because the two required
-Fates source/release locations are private, and the exact contract artifact is
-not reproducible byte-for-byte from the accepted source checkpoint. A clean
-public runtime reproduction therefore cannot honestly be marked complete.
+The private artifact dependency has been removed from the active source path.
+The source dependency and two-build reproducibility controls pass. A complete
+public/no-credential runtime reproduction remains pending because Ananke and
+Project-Adrasteia are still private and MC-11 does not authorize changing
+their visibility.
 
 The required follow-up is a separately reviewed public-source/release action:
 
 1. make the required source repositories legally and operationally publishable;
-2. produce a deterministic contract artifact or document an approved source
-   package mapping with matching provenance;
-3. run the full source-only clean-room build and real ALLOW,
+2. run the full source-only clean-room build and real ALLOW,
    REQUIRES_APPROVAL, human-approval, and DENY smokes;
-4. perform a separate visibility/release approval.
+3. perform a separate visibility/release approval.
 
 Until then, the public distribution gate remains blocked rather than falling
 back to a fake authority runtime.

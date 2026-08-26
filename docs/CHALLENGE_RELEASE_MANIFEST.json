@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "mc-10.challenge-release-manifest.v1",
-  "status": "BLOCKED_PUBLIC_SOURCE_AND_ARTIFACT_PROVENANCE",
+  "schemaVersion": "mc-11.challenge-release-manifest.v1",
+  "status": "SOURCE_PINNED_PENDING_VISIBILITY_AND_CLEANROOM",
   "visibilityChangeAuthorized": false,
   "deploymentAuthorized": false,
   "console": {
@@ -12,10 +12,10 @@
   "requiredRuntimeSources": [
     {
       "repository": "https://github.com/hourwise/Project-Ananke",
-      "sha": "0afd16ac3827c568bf3d3a4affcaf85ada7800b2",
-      "runtimeBaseSha": "693b386218e73afaa579cb6457f054007293581b",
-      "provenanceBranch": "codex/mc-10-public-runtime-provenance",
-      "provenanceCommit": "0afd16a",
+      "sha": "5fa868b8bf1ed2f76bcf6427efc5ccf5f09939f0",
+      "runtimeBaseSha": "0afd16ac3827c568bf3d3a4affcaf85ada7800b2",
+      "provenanceBranch": "codex/mc-11-public-source-runtime-contracts",
+      "provenanceCommit": "5fa868b8bf1ed2f76bcf6427efc5ccf5f09939f0",
       "license": "MIT",
       "runtimeRole": "Canonical authenticated Fates HTTP authority",
       "consumption": "source checkout/workspace build",
@@ -24,14 +24,15 @@
     {
       "repository": "https://github.com/hourwise/Project-Adrasteia",
       "package": "project-runtime-contracts",
-      "sha": "6aba3ef466a16292689d4afaf9f9bc40dc013301",
+      "sha": "a1c01bf9e6f9d6a126cfdcc1acfacd488b214210",
+      "sourceBaseSha": "6aba3ef466a16292689d4afaf9f9bc40dc013301",
       "version": "0.6.2",
-      "releaseTag": "adrasteia-preflight-v0.6.2-protocol-1.4.0",
       "license": "MIT",
       "runtimeRole": "Ananke runtime contract dependency",
-      "consumption": "exact package release URL in Ananke lockfile",
+      "consumption": "exact HTTPS Git source pin in Ananke lockfile; npm prepare builds dist",
       "publiclyReproducibleNow": false,
-      "artifactReproducibility": "SOURCE_BUILD_DIFFERS_IN_LINE_ENDINGS_FROM_RELEASE_ARTIFACT"
+      "packageContentSha256": "AAB38EA052AFA8C5230932510DEFB0610B96B1000EAF12A9BE55936D46B6EB40",
+      "historicalArtifact": "HISTORICAL_PRIVATE_ARTIFACT_NOT_USED_BY_PUBLIC_RELEASE"
     }
   ],
   "evidenceOnlyRepositories": [
@@ -57,7 +58,8 @@
     }
   ],
   "buildOrder": [
-    "Build Project-Adrasteia/runtime contracts from the reviewed source or reviewed deterministic artifact.",
+    "Checkout Project-Adrasteia at the exact source pin, run npm ci and npm run build.",
+    "Install Ananke from its exact source pin; npm fetches Project-Adrasteia over HTTPS and runs its prepare build.",
     "Build and start Ananke runtime-core with authenticated server-side profiles.",
     "Build and start Moirae Console production host.",
     "Run real HTTP and WebMCP authority-path smokes."
