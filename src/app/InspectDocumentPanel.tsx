@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 
 import { requestInspectDocument } from '../inspection/client';
-import type { InspectionResult, LifecyclePhase } from '../inspection/types';
+import type { InspectionResult } from '../inspection/types';
+import { GovernanceSummary, type GovernanceTone } from './GovernanceSummary';
+import { TechnicalEvidence } from './TechnicalEvidence';
 
 type PanelState =
   | { readonly status: 'IDLE' }
@@ -40,38 +42,47 @@ export function InspectDocumentPanel() {
     }
   }
 
-  const phases = phasesFor(state);
   const result = state.status === 'RESULT' ? state.result : undefined;
 
   return (
     <section className="inspection-panel" aria-labelledby="inspection-heading">
       <div className="inspection-header">
         <div>
-          <p className="card-label">MC-01 read-only disclosure</p>
-          <h2 id="inspection-heading">inspect_document</h2>
+          <p className="card-label">Read-only governed action</p>
+          <h2 id="inspection-heading">Inspect document</h2>
+          <code className="tool-name">inspect_document</code>
         </div>
-        <button type="button" onClick={submitRequest} disabled={state.status === 'REQUESTED'}>
+        <button
+          className="button-primary"
+          type="button"
+          onClick={submitRequest}
+          disabled={state.status === 'REQUESTED'}
+        >
           {state.status === 'REQUESTED' ? 'Requesting…' : 'Request inspection'}
         </button>
       </div>
 
       <p className="inspection-copy">
-        The fixed demonstration document is requested by canonical ID. Its body is rendered only
-        when the host-side disclosure gate receives the required governance outcome.
+        Ask to read the fixed demonstration policy. The Console host discloses it only after The
+        Fates authorises the exact request.
       </p>
 
-      <ol className="lifecycle" aria-label="Governed inspection lifecycle">
-        {phases.map((phase) => (
-          <li key={phase.name} className="lifecycle-step">
-            <span>{phase.name}</span>
-            <small>{phase.source}</small>
-          </li>
-        ))}
-      </ol>
-
-      {state.status === 'REQUESTED' && <p className="result-note">REQUESTED · {state.requestId}</p>}
+      {state.status === 'IDLE' && (
+        <div className="instruction-card">
+          <span>1</span>
+          <p>
+            <strong>The agent requests a read.</strong>
+            The Fates decides whether the Console host may disclose the document.
+          </p>
+        </div>
+      )}
+      {state.status === 'REQUESTED' && (
+        <p className="result-note result-note--pending">
+          REQUESTED · Awaiting an authoritative Fates decision · {state.requestId}
+        </p>
+      )}
       {state.status === 'ERROR' && (
-        <p className="result-note">
+        <p className="result-note result-note--blocked">
           NO DISCLOSURE · {state.message} · {state.requestId}
         </p>
       )}
@@ -80,113 +91,142 @@ export function InspectDocumentPanel() {
   );
 }
 
-function InspectionResultView({ result }: { readonly result: InspectionResult }) {
+export function InspectionResultView({ result }: { readonly result: InspectionResult }) {
+  const disclosed = result.disclosure.state === 'DISCLOSED';
+  const decisionTone: GovernanceTone = result.outcome.status === 'ALLOWED' ? 'allowed' : 'denied';
+
   return (
     <div className="inspection-result">
-      <dl className="evidence-grid">
-        <div>
-          <dt>Request</dt>
-          <dd>{result.request.requestId}</dd>
-        </div>
-        <div>
-          <dt>Action</dt>
-          <dd>{result.request.action}</dd>
-        </div>
-        <div>
-          <dt>Decision</dt>
-          <dd>{result.outcome.status}</dd>
-        </div>
-        <div>
-          <dt>Evidence</dt>
-          <dd>{result.outcome.evidence.evidenceId}</dd>
-        </div>
-        <div>
-          <dt>Receipt</dt>
-          <dd>{result.outcome.evidence.receiptId ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Decision digest</dt>
-          <dd>{result.outcome.evidence.decisionDigest ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Decision ID</dt>
-          <dd>{result.outcome.evidence.decisionId ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Outcome ID</dt>
-          <dd>{result.outcome.evidence.outcomeId ?? result.outcome.outcomeId}</dd>
-        </div>
-        <div>
-          <dt>Audit ID</dt>
-          <dd>{result.outcome.evidence.auditId ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Canonical request digest</dt>
-          <dd>{result.outcome.evidence.canonicalRequestDigest ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Authority binding digest</dt>
-          <dd>{result.outcome.evidence.authorityBindingDigest ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Authority receipt digest</dt>
-          <dd>{result.outcome.evidence.authorityReceiptDigest ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Authority lifetime</dt>
-          <dd>
-            {result.outcome.evidence.issuedAt ?? '—'} → {result.outcome.evidence.expiresAt ?? '—'}
-          </dd>
-        </div>
-        <div>
-          <dt>Replay state</dt>
-          <dd>{result.outcome.evidence.replayState ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Fates action</dt>
-          <dd>{result.outcome.evidence.canonicalAction ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Fates request / correlation</dt>
-          <dd>
-            {result.outcome.evidence.fatesRequestId ?? '—'} /{' '}
-            {result.outcome.evidence.correlationId ?? '—'}
-          </dd>
-        </div>
-        <div>
-          <dt>Effect semantics</dt>
-          <dd>{result.outcome.evidence.effectSemantics ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Fates resource reads</dt>
-          <dd>{result.outcome.evidence.fatesResourceReadAttemptCount ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Fates disclosure</dt>
-          <dd>
-            {result.outcome.evidence.documentDisclosureByFates === undefined
-              ? '—'
-              : String(result.outcome.evidence.documentDisclosureByFates)}
-          </dd>
-        </div>
-        <div>
-          <dt>Mode</dt>
-          <dd>{result.disclosure.evidenceMode}</dd>
-        </div>
-        <div>
-          <dt>Provenance</dt>
-          <dd>{formatProvenance(result.outcome.evidence.provenance)}</dd>
-        </div>
-      </dl>
+      <GovernanceSummary
+        label="Inspection governance result"
+        steps={[
+          {
+            label: 'Agent request',
+            value: 'INSPECT DOCUMENT',
+            detail: 'The agent requested a read.',
+          },
+          {
+            label: 'Fates decision',
+            value: result.outcome.status,
+            detail:
+              result.outcome.status === 'ALLOWED'
+                ? 'The Fates authorised it.'
+                : 'The Fates did not authorise disclosure.',
+            tone: decisionTone,
+          },
+          {
+            label: 'Host result',
+            value: result.disclosure.state,
+            detail: disclosed
+              ? 'The host disclosed the document.'
+              : 'The host disclosed no document.',
+            tone: disclosed ? 'allowed' : 'denied',
+          },
+        ]}
+      />
+
+      <p className={`outcome-explanation ${disclosed ? 'outcome-explanation--allowed' : ''}`}>
+        {disclosed
+          ? 'The document was disclosed only after authoritative Fates approval.'
+          : `No document content was disclosed: ${result.disclosure.reasonCode ?? result.outcome.status}.`}
+      </p>
+
+      <TechnicalEvidence phases={result.phases}>
+        <dl className="evidence-grid">
+          <EvidenceItem label="Request ID" value={result.request.requestId} />
+          <EvidenceItem label="Action" value={result.request.action} />
+          <EvidenceItem
+            label="Document"
+            value={result.outcome.evidence.documentId ?? result.document?.documentId ?? '—'}
+          />
+          <EvidenceItem label="Decision" value={result.outcome.status} />
+          <EvidenceItem label="Evidence ID" value={result.outcome.evidence.evidenceId} />
+          <EvidenceItem label="Receipt ID" value={result.outcome.evidence.receiptId ?? '—'} />
+          <EvidenceItem
+            label="Decision digest"
+            value={result.outcome.evidence.decisionDigest ?? '—'}
+          />
+          <EvidenceItem label="Decision ID" value={result.outcome.evidence.decisionId ?? '—'} />
+          <EvidenceItem
+            label="Outcome ID"
+            value={result.outcome.evidence.outcomeId ?? result.outcome.outcomeId}
+          />
+          <EvidenceItem label="Audit ID" value={result.outcome.evidence.auditId ?? '—'} />
+          <EvidenceItem
+            label="Canonical request digest"
+            value={result.outcome.evidence.canonicalRequestDigest ?? '—'}
+          />
+          <EvidenceItem
+            label="Authority binding digest"
+            value={result.outcome.evidence.authorityBindingDigest ?? '—'}
+          />
+          <EvidenceItem
+            label="Authority receipt digest"
+            value={result.outcome.evidence.authorityReceiptDigest ?? '—'}
+          />
+          <EvidenceItem
+            label="Authority lifetime"
+            value={`${result.outcome.evidence.issuedAt ?? '—'} → ${result.outcome.evidence.expiresAt ?? '—'}`}
+          />
+          <EvidenceItem label="Replay state" value={result.outcome.evidence.replayState ?? '—'} />
+          <EvidenceItem
+            label="Fates action"
+            value={result.outcome.evidence.canonicalAction ?? '—'}
+          />
+          <EvidenceItem
+            label="Fates request / correlation"
+            value={`${result.outcome.evidence.fatesRequestId ?? '—'} / ${result.outcome.evidence.correlationId ?? '—'}`}
+          />
+          <EvidenceItem
+            label="Authenticated workload identity"
+            value={formatProvenance(result.outcome.evidence.authenticatedWorkloadIdentity)}
+          />
+          <EvidenceItem
+            label="Effect semantics"
+            value={result.outcome.evidence.effectSemantics ?? '—'}
+          />
+          <EvidenceItem
+            label="Fates resource reads"
+            value={result.outcome.evidence.fatesResourceReadAttemptCount ?? '—'}
+          />
+          <EvidenceItem
+            label="Fates disclosure"
+            value={formatBoolean(result.outcome.evidence.documentDisclosureByFates)}
+          />
+          <EvidenceItem label="Host document reads" value={result.hostDocumentReadCount ?? '—'} />
+          <EvidenceItem label="Evidence mode" value={result.disclosure.evidenceMode} />
+          <EvidenceItem
+            label="Provenance"
+            value={formatProvenance(result.outcome.evidence.provenance)}
+          />
+        </dl>
+      </TechnicalEvidence>
+
       {result.document ? (
-        <pre className="document-body">{result.document.content}</pre>
+        <div className="document-disclosure">
+          <p className="technical-section-label">Demonstration document content</p>
+          <pre className="document-body">{result.document.content}</pre>
+        </div>
       ) : (
-        <p className="result-note">
+        <p className="result-note result-note--blocked">
           NO DISCLOSURE · {result.disclosure.reasonCode ?? result.outcome.status}
         </p>
       )}
     </div>
   );
+}
+
+function EvidenceItem({ label, value }: { readonly label: string; readonly value: unknown }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{String(value)}</dd>
+    </div>
+  );
+}
+
+function formatBoolean(value: boolean | undefined): string {
+  return value === undefined ? '—' : String(value);
 }
 
 function formatProvenance(provenance: Readonly<Record<string, string>> | undefined): string {
@@ -196,14 +236,4 @@ function formatProvenance(provenance: Readonly<Record<string, string>> | undefin
   return Object.entries(provenance)
     .map(([key, value]) => `${key}=${value}`)
     .join(', ');
-}
-
-function phasesFor(state: PanelState): readonly LifecyclePhase[] {
-  if (state.status === 'RESULT') {
-    return state.result.phases;
-  }
-  if (state.status === 'IDLE') {
-    return [];
-  }
-  return [{ name: 'REQUESTED', source: 'local-observed' }];
 }

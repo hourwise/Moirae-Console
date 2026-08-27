@@ -13,43 +13,51 @@ export function App() {
 
   return (
     <main className="console-shell">
-      <p className="eyebrow">MOIRAE CONSOLE · WEBMCP RELEASE CANDIDATE</p>
-      <h1>The web can expose tools. The Fates decides what may happen.</h1>
-      <p className="lede">
-        Governed agent actions for the web. WebMCP makes capabilities discoverable; Moirae makes the
-        Fates decision visible to the human.
-      </p>
-      <section className="status-card" aria-labelledby="status-heading">
-        <div>
-          <p className="card-label">Current state</p>
-          <h2 id="status-heading">Fates host boundary</h2>
+      <header className="product-header">
+        <div className="product-header-row">
+          <div>
+            <p className="eyebrow">MOIRAE CONSOLE</p>
+            <h1>Governed agent actions for the web</h1>
+          </div>
+          <p className={`connection-status connection-status--${webmcpState.toLowerCase()}`}>
+            <span aria-hidden="true" /> WebMCP {registrationLabel(webmcpState)}
+          </p>
         </div>
-        <p className="status-pill">WEBMCP {webmcpState}</p>
-        <p className="card-copy">
-          The Console host submits fixed requests to Ananke and performs no document disclosure or
-          publication until authoritative Fates evidence passes the exact binding checks. Missing
-          transport configuration fails closed.
+        <p className="lede">
+          <strong>WebMCP exposes capabilities.</strong>
+          <span>The Fates decides authority.</span>
         </p>
-      </section>
-      <section className="demo-overview" aria-label="Three governed demonstrations">
+        <div className="boundary-story" aria-label="Governed action boundary">
+          <span>Agent request</span>
+          <b aria-hidden="true">→</b>
+          <span>The Fates decides</span>
+          <b aria-hidden="true">→</b>
+          <span>Console host acts</span>
+        </div>
+      </header>
+
+      <section className="demo-overview" aria-label="Three governed demonstration outcomes">
         <article>
-          <p className="card-label">01 · Inspect</p>
-          <strong>ALLOW → DISCLOSED</strong>
-          <p>Read-only disclosure follows authoritative Fates approval.</p>
+          <p className="card-label">Inspect</p>
+          <strong>ALLOWED → DISCLOSED</strong>
         </article>
         <article>
-          <p className="card-label">02 · Publish</p>
-          <strong>APPROVAL REQUIRED → PUBLISHED</strong>
-          <p>A human decision creates the next Fates-governed step.</p>
+          <p className="card-label">Publish</p>
+          <strong>APPROVAL REQUIRED → HUMAN DECISION</strong>
         </article>
         <article>
-          <p className="card-label">03 · Restricted agent</p>
+          <p className="card-label">Restricted publish</p>
           <strong>DENIED → NOT EXECUTED</strong>
-          <p>The same publication operation is denied without a host effect.</p>
         </article>
       </section>
       <InspectDocumentPanel />
       <PublishDocumentPanel />
     </main>
   );
+}
+
+function registrationLabel(state: WebMcpRegistrationState): string {
+  if (state === 'REGISTERED') return 'Connected';
+  if (state === 'FAILED') return 'Failed';
+  return 'Unavailable';
 }
