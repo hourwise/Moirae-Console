@@ -154,6 +154,25 @@ The agent can discover only `inspect_document` and `publish_document`.
 It cannot choose Fates actions, credentials, callers, digests, destinations,
 purposes, approval states, or receipts.
 
+## Judge quick start
+
+Open the live Moirae Console URL provided in the official submission and ask the
+agent to run these three bounded demonstrations:
+
+1. Inspect the demonstration policy document. Expected: `ALLOW -> DISCLOSED`.
+2. Publish the demonstration policy document. The first result is expected to be
+   `REQUIRES_APPROVAL -> NOT PUBLISHED`; a human then uses the approval card.
+   Judges receive the demonstration approval password separately through the
+   official submission testing instructions. No approval password or Fates
+   transport credential is stored in this repository. Successful approval is
+   `APPROVED -> PUBLISHED`.
+3. Run the visible restricted-agent demonstration. Expected:
+   `DENY -> NOT EXECUTED`.
+
+Because the demonstration destination is intentionally fixed, a later approved
+publication may report host state `ALREADY_PUBLISHED`. This is expected
+idempotent behaviour, not a failed approval.
+
 ## Development checks
 
 ```shell

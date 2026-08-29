@@ -18,6 +18,67 @@ implementation is the presentation/UI successor to the MC-14 remediation;
 the provenance-only seal commit, if present, is reported separately from the
 reviewed implementation checkpoint.
 
+## Judge testing instructions
+
+The following text can be copied into the official hackathon/Devpost testing-instructions field:
+
+```text
+JUDGE TESTING INSTRUCTIONS
+
+Open the live Moirae Console URL.
+
+1. Ask the agent to inspect the demonstration policy document.
+
+Expected:
+ALLOW -> DISCLOSED
+
+2. Ask the agent to publish the demonstration policy document.
+
+Expected initial result:
+REQUIRES_APPROVAL -> NOT PUBLISHED
+
+A human approval card will appear.
+
+Judge approval password:
+<JUDGE PASSWORD ENTERED PRIVATELY HERE>
+
+Enter the supplied judge password and approve.
+
+Expected:
+APPROVED -> PUBLISHED
+
+If the fixed demonstration document has already been published by an earlier judge,
+the final host state may report ALREADY_PUBLISHED. This is expected idempotent
+behaviour and does not indicate a failed approval.
+
+3. Run the visible restricted-agent demonstration.
+
+Expected:
+DENY -> NOT EXECUTED
+
+The supplied judge password is only the human demonstration step-up proof.
+
+Fates/Ananke service credentials remain server-side and are never provided to judges.
+```
+
+## Private judge credential provisioning
+
+Deployment-only procedure; no deployment or secret generation is performed by this repository:
+
+1. Generate a new random secret in the deployment platform's secret manager, dedicated only to
+   this hackathon demonstration.
+2. Install it as the Console host environment variable
+   `MOIRAE_OPERATOR_STEP_UP_SECRET=<judge-only-hackathon-secret>`.
+3. Do not reuse development, Ananke, personal-account, or any other credential. Do not commit it,
+   place it in documentation, or expose it to browser assets.
+4. Provide the value to judges only through the official private submission credential/testing
+   instructions mechanism.
+
+The Ananke host continues to receive distinct private values for
+`ANANKE_MOIRAE_EXECUTION_TOKEN`, `ANANKE_MOIRAE_PUBLISH_TOKEN`,
+`ANANKE_MOIRAE_APPROVER_TOKEN`, and `ANANKE_MOIRAE_RESTRICTED_TOKEN`. Judges receive none of
+these service credentials.
+
 ## Project description
 
 WebMCP lets a website expose structured capabilities to an AI agent. Moirae Console makes the
