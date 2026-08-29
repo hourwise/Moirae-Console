@@ -29,9 +29,9 @@ they are not additional WebMCP tools.
 The real authority path is built from these exact source checkpoints:
 
 ```text
-Moirae Console
+Moirae Console @ 8c5109c52bb8065d9c1b4f4a81e0e6df9e830030
    ↓
-Project Ananke @ 5fa868b0355c7e2f000ef80db5d27d5c6987e6f2
+Project Ananke @ 3d76adb162a0ff07b5630700ae30a823f1419cb4
    ↓
 Project-Adrasteia / Runtime Contracts 0.6.2
    ↓
@@ -39,6 +39,12 @@ release/webmcp-runtime-v0.6.2
    ↓
 a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
 ```
+
+The reviewed Console implementation is the MC-14 remediation successor: `204e52e...`
+closed the Console red-team gaps and `8c5109c...` is its presentation/UI successor.
+Ananke `3d76adb...` is the successor to the older documented `5fa868b...` runtime
+authority checkpoint and closes cross-authority credential reuse. Runtime Contracts
+remains pinned to the exact `a1c01bf...` source commit.
 
 Project-Adrasteia `main` is currently a separate older `0.4.0` lineage at
 `f9eeb25076e0a590f13c7bed6c8de8c9a363ce1b`; it is not the source used by the
@@ -72,7 +78,7 @@ authority.
 Requirements: Node.js 22.12 or newer and npm.
 
 The Console depends on a separately running Ananke authority. The public
-Ananke repository contains the runtime source; use the accepted MC-11
+Ananke repository contains the runtime source; use the MC-16-reviewed
 source-dependency checkpoint for this demonstration:
 
 ```shell
@@ -84,7 +90,7 @@ npm run build
 
 git clone https://github.com/hourwise/Project-Ananke.git ../Project-Ananke
 cd ../Project-Ananke
-git checkout 5fa868b0355c7e2f000ef80db5d27d5c6987e6f2
+git checkout 3d76adb162a0ff07b5630700ae30a823f1419cb4
 npm ci
 npm run build
 npm run build -w @ananke/runtime-core
@@ -170,7 +176,7 @@ security-complete system. Known limitations include process-local replay and
 approval state, demonstration-grade workload/operator identity, a bounded
 local publication store, authenticated-transport-bound rather than signed
 receipts, pending TLS/service identity, pending operational monitoring, and
-no distributed exactly-once guarantee.
+no distributed exactly-once guarantee, and known registered dependency advisories.
 
 See [`SECURITY.md`](SECURITY.md), [`docs/RELEASE_SECURITY_DEBT.md`](docs/RELEASE_SECURITY_DEBT.md),
 and [`docs/CHALLENGE_DISTRIBUTION.md`](docs/CHALLENGE_DISTRIBUTION.md).

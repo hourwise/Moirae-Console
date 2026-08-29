@@ -27,7 +27,27 @@ MVP implementation + local-model acceptance: achieved
 Containment / security-complete seal: deferred
 ```
 
-## Frozen candidate provenance
+## MC-16 reviewed candidate provenance
+
+The final bounded adversarial review exercised this exact compatibility set:
+
+```text
+Moirae Console @ 8c5109c52bb8065d9c1b4f4a81e0e6df9e830030
+        â†“ authenticated POST /api/execute
+Project Ananke @ 3d76adb162a0ff07b5630700ae30a823f1419cb4
+        â†“ @ananke/adrasteia-adapter
+Project-Adrasteia / Runtime Contracts 0.6.2
+        â†“ release/webmcp-runtime-v0.6.2
+          a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
+```
+
+Review result: **PASS WITH LIMITATIONS**. Console `8c5109c...` is the
+presentation/UI successor to the MC-14 remediation `204e52e...`; Ananke
+`3d76adb...` closes cross-authority credential reuse and succeeds the older
+documented `5fa868b...` authority checkpoint. Runtime Contracts remains pinned
+to the exact `a1c01bf...` commit.
+
+## Historical development provenance
 
 | Item                          | Identity                                                           |
 | ----------------------------- | ------------------------------------------------------------------ |
@@ -44,7 +64,7 @@ Containment / security-complete seal: deferred
 > These SHAs establish provenance for Moirae Console's initial development baseline. They
 > are not credentials and do not grant browser-side authority.
 
-## Qwen acceptance baseline
+## Historical Qwen acceptance baseline
 
 The frozen live model was `Qwen3.5-0.8B-Q4_0.gguf` with SHA-256
 `57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf`. The observed

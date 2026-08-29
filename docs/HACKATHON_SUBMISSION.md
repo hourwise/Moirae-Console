@@ -1,6 +1,22 @@
-# Hackathon submission draft
+# Hackathon submission
 
-This is draft material only. It is not submitted automatically.
+This is submission material for the bounded MC-16 candidate. It is not
+submitted automatically.
+
+## Candidate checkpoint
+
+The exact compatibility set for the reviewed candidate is:
+
+```text
+Moirae Console @ 8c5109c52bb8065d9c1b4f4a81e0e6df9e830030
+Project Ananke @ 3d76adb162a0ff07b5630700ae30a823f1419cb4
+Project-Adrasteia / Runtime Contracts 0.6.2 @ a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
+```
+
+The final adversarial review result is **PASS WITH LIMITATIONS**. The Console
+implementation is the presentation/UI successor to the MC-14 remediation;
+the provenance-only seal commit, if present, is reported separately from the
+reviewed implementation checkpoint.
 
 ## Project description
 

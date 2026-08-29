@@ -4,6 +4,11 @@ This package identifies the exact release candidate and gives an independent
 reviewer enough bounded context to attempt adversarial testing. It intentionally
 contains no security conclusion.
 
+> **Historical package notice:** MC-09 is superseded by the MC-16 candidate
+> seal. The checkpoints below are preserved as historical review targets; they
+> are not the final hackathon candidate. Use
+> `docs/CHALLENGE_RELEASE_MANIFEST.json` for the exact final source graph.
+
 ## Review targets
 
 | Component                 | Target                                     |

@@ -6,27 +6,26 @@ boundary; it does not copy, fork, or reimplement Fates policy code.
 
 ## Distribution decision
 
-MC-10 has traced the real runtime graph and has not yet cleared the public
-distribution gate. The exact graph, license matrix, artifact comparison, and
-clean-room blocker are recorded in
+MC-16 has completed the bounded final review with a result of **PASS WITH
+LIMITATIONS**. The exact graph, license matrix, artifact comparison, and
+remaining limitations are recorded in
 [`PUBLIC_RUNTIME_DISTRIBUTION.md`](PUBLIC_RUNTIME_DISTRIBUTION.md) and
 [`CHALLENGE_RELEASE_MANIFEST.json`](CHALLENGE_RELEASE_MANIFEST.json).
 
-The intended release model remains the public-dependency strategy, subject to
-the separate public-source and artifact-provenance gate:
+The release model is the public-dependency strategy:
 
 - Moirae Console is the submitted application repository.
-- Project-Ananke is the required Fates runtime boundary and must be publicly reachable at the
-  documented checkpoint before publication.
+- Project-Ananke is the required Fates runtime boundary at `3d76adb...` on `main`.
+- Project-Adrasteia / Runtime Contracts remains pinned to `a1c01bf...` on
+  `release/webmcp-runtime-v0.6.2`.
 - Any Ananke dependency required by the selected runtime must also be publicly reachable and
   independently licensed before publication.
 - The Console source contains no private Git URL, credential, protected fixture copy, or local
   machine path.
 
 The challenge release must not depend on an untracked sibling checkout. A clean-room run must
-start the Ananke boundary from a documented public checkout or from a separately published,
-reviewed release package. If those prerequisites are not public and reproducible at release
-review time, publication is blocked rather than replaced with a fake policy provider.
+start the Ananke boundary from the documented public checkout and exact source pins; it must
+not be replaced with a fake policy provider.
 
 ## Included source boundary
 

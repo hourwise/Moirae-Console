@@ -4,6 +4,12 @@ This is a neutral handoff package for an independent reviewer. It contains
 source graph, checkpoints, and reproduction intent only. It does not contain a
 pass conclusion.
 
+> **Historical package notice:** This MC-11 package is superseded by the MC-16
+> candidate seal record in `docs/CHALLENGE_RELEASE_MANIFEST.json`. Its older
+> checkpoints are retained as review history and must not be used to reproduce
+> the final submission. Use the MC-16 manifest and
+> `docs/PUBLIC_RUNTIME_DISTRIBUTION.md` for the current source graph.
+
 ## Neutral review prompt
 
 > Try to break this source distribution. Do not assume the implementation,

@@ -1,6 +1,6 @@
-# MC-12 public runtime distribution
+# MC-16 public runtime distribution and provenance
 
-Status: **public source graph verified; anonymous clean-room execution complete**.
+Status: **final reviewed source graph pinned; adversarial result: PASS WITH LIMITATIONS**.
 
 This document records the smallest source graph needed to run the real
 hackathon authority path. It is a release-preparation document; it does not
@@ -29,13 +29,15 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 
 | Component                             | Exact source checkpoint                                                                                                 | Runtime role                                                       | Current source status                                         |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| Moirae Console                        | `40c85771cbd9a50c68062a0b7c2c9ee1c0c5d026` | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Public source; anonymous clean-room verified |
-| Project Ananke                        | `5fa868b0355c7e2f000ef80db5d27d5c6987e6f2` (runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Public source; anonymous clean-room verified |
+| Moirae Console                        | `8c5109c52bb8065d9c1b4f4a81e0e6df9e830030` | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Public source; reviewed implementation |
+| Project Ananke                        | `3d76adb162a0ff07b5630700ae30a823f1419cb4` (successor to `5fa868b0355c7e2f000ef80db5d27d5c6987e6f2`; runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Public source; reviewed credential-composition remediation |
 | Project-Adrasteia / Runtime Contracts | `release/webmcp-runtime-v0.6.2` → `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`) | Runtime contract package consumed by Ananke | Public source; anonymous exact-SHA fetch and clean-room build verified |
 
-The Console commit is the accepted MC-09 remediation checkpoint. The
-distribution documents are additional review material on the bounded MC-09
-branch and do not alter that runtime checkpoint.
+The reviewed Console implementation is the presentation/UI successor `8c5109c...`
+to the MC-14 red-team remediation `204e52e...`. Ananke `3d76adb...` is the
+credential-composition successor to the older documented `5fa868b...` checkpoint.
+Runtime Contracts remains pinned to `a1c01bf...` on
+`release/webmcp-runtime-v0.6.2`.
 
 ## Not required by the exact challenge runtime
 
@@ -122,7 +124,7 @@ to the reviewed source commits.
 npm ci --no-audit --no-fund
 npm run build
 
-# Project Ananke at 5fa868b0355c7e2f000ef80db5d27d5c6987e6f2
+# Project Ananke main at 3d76adb162a0ff07b5630700ae30a823f1419cb4
 npm ci --no-audit --no-fund
 npm run verify:adrasteia-source
 npm run build
