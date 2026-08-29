@@ -33,11 +33,11 @@ The final bounded adversarial review exercised this exact compatibility set:
 
 ```text
 Moirae Console @ 8c5109c52bb8065d9c1b4f4a81e0e6df9e830030
-        â†“ authenticated POST /api/execute
+        -> authenticated POST /api/execute
 Project Ananke @ 3d76adb162a0ff07b5630700ae30a823f1419cb4
-        â†“ @ananke/adrasteia-adapter
+        -> @ananke/adrasteia-adapter
 Project-Adrasteia / Runtime Contracts 0.6.2
-        â†“ release/webmcp-runtime-v0.6.2
+        -> release/webmcp-runtime-v0.6.2
           a1c01bf9e6f9d6a126cfdcc1acfacd488b214210
 ```
 
