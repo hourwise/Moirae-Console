@@ -3,11 +3,11 @@
 This register keeps known dependency and deployment limitations visible. MC-16 does not
 update dependencies or claim production security completeness.
 
-| Repository                | Current audit finding                                    | Treatment                                           |
-| ------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
+| Repository                | Current audit finding                                    | Treatment                                                                                                            |
+| ------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Project Ananke            | 2 moderate and 6 high dependency advisories              | Registered security debt; no dependency updates authorized in MC-16; outside the running `runtime-core` request path |
-| Project-Fates-Integration | 1 high `fast-uri` advisory                               | Reported; no dependency updates authorized in MC-03 |
-| Moirae Console            | 0 reported dependency vulnerabilities at the MC-16 audit | No dependency change                                |
+| Project-Fates-Integration | 1 high `fast-uri` advisory                               | Reported; no dependency updates authorized in MC-03                                                                  |
+| Moirae Console            | 0 reported dependency vulnerabilities at the MC-16 audit | No dependency change                                                                                                 |
 
 Additional release-gate limitations:
 

@@ -27,11 +27,11 @@ REQUIRES_APPROVAL/ALLOW, and restricted-caller DENY paths.
 
 ## Required source set
 
-| Component                             | Exact source checkpoint                                                                                                 | Runtime role                                                       | Current source status                                         |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| Moirae Console                        | `8c5109c52bb8065d9c1b4f4a81e0e6df9e830030` | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Public source; reviewed implementation |
-| Project Ananke                        | `3d76adb162a0ff07b5630700ae30a823f1419cb4` (successor to `5fa868b0355c7e2f000ef80db5d27d5c6987e6f2`; runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority | Public source; reviewed credential-composition remediation |
-| Project-Adrasteia / Runtime Contracts | `release/webmcp-runtime-v0.6.2` → `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`) | Runtime contract package consumed by Ananke | Public source; anonymous exact-SHA fetch and clean-room build verified |
+| Component                             | Exact source checkpoint                                                                                                                                       | Runtime role                                                       | Current source status                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Moirae Console                        | `8c5109c52bb8065d9c1b4f4a81e0e6df9e830030`                                                                                                                    | Browser, bounded same-origin host, WebMCP, resource/effect adapter | Public source; reviewed implementation                                 |
+| Project Ananke                        | `3d76adb162a0ff07b5630700ae30a823f1419cb4` (successor to `5fa868b0355c7e2f000ef80db5d27d5c6987e6f2`; runtime base `0afd16ac3827c568bf3d3a4affcaf85ada7800b2`) | Canonical authenticated Fates HTTP authority                       | Public source; reviewed credential-composition remediation             |
+| Project-Adrasteia / Runtime Contracts | `release/webmcp-runtime-v0.6.2` → `a1c01bf9e6f9d6a126cfdcc1acfacd488b214210` (base `6aba3ef466a16292689d4afaf9f9bc40dc013301`)                                | Runtime contract package consumed by Ananke                        | Public source; anonymous exact-SHA fetch and clean-room build verified |
 
 The reviewed Console implementation is the presentation/UI successor `8c5109c...`
 to the MC-14 red-team remediation `204e52e...`. Ananke `3d76adb...` is the
