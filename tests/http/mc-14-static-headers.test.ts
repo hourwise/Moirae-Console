@@ -1,25 +1,41 @@
-import { resolve } from 'node:path';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createMoiraeProductionServer } from '../../server/production-host';
 
 const servers: ReturnType<typeof createMoiraeProductionServer>[] = [];
+const staticRoots: string[] = [];
 
 afterEach(async () => {
-  await Promise.all(
-    servers.splice(0).map(
-      (server) =>
-        new Promise<void>((resolveClose, rejectClose) => {
-          server.close((error) => (error ? rejectClose(error) : resolveClose()));
-        }),
-    ),
-  );
+  try {
+    await Promise.all(
+      servers.splice(0).map(
+        (server) =>
+          new Promise<void>((resolveClose, rejectClose) => {
+            server.close((error) => (error ? rejectClose(error) : resolveClose()));
+          }),
+      ),
+    );
+  } finally {
+    await Promise.all(
+      staticRoots.splice(0).map((staticRoot) => rm(staticRoot, { force: true, recursive: true })),
+    );
+  }
 });
 
-function startServer(): Promise<{
+async function startServer(): Promise<{
   server: ReturnType<typeof createMoiraeProductionServer>;
   port: number;
 }> {
+  const staticRoot = await mkdtemp(join(tmpdir(), 'moirae-mc14-static-'));
+  await writeFile(
+    join(staticRoot, 'index.html'),
+    '<!doctype html><html><body>MC14 static fixture</body></html>\n',
+  );
+  staticRoots.push(staticRoot);
+
   const server = createMoiraeProductionServer({
     env: {
       MOIRAE_ALLOWED_ORIGIN: 'https://console.example.test',
@@ -30,7 +46,7 @@ function startServer(): Promise<{
       ANANKE_MOIRAE_RESTRICTED_TOKEN: 'mc14-restricted-placeholder',
       ANANKE_MOIRAE_EXECUTION_URL: 'http://127.0.0.1:3000/api/execute',
     },
-    staticRoot: resolve('dist'),
+    staticRoot,
   });
   servers.push(server);
   return new Promise((resolveStart, rejectStart) => {
